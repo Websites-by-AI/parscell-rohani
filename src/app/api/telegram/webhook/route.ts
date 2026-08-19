@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { demoAccounts, clinicDemoUsers, findByPhone, roleLabels } from "@/data/accounts";
 
 export const runtime = "edge";
 
@@ -8,10 +9,17 @@ export const runtime = "edge";
  * Registered via setWebhook (see README). Incoming updates are validated with
  * the TELEGRAM_WEBHOOK_SECRET header (X-Telegram-Bot-Api-Secret-Token) when
  * the secret env var is configured on Cloudflare Pages.
+ *
+ * User registration: /register + phone number. Demo accounts (BLDC) are
+ * matched from the demo database; clinic demo users are listed via /clinic.
  */
 
 const SITE_URL = "https://parscell.exhibition2world.ir";
 const BOT_URL = "https://t.me/Pars_sell_bot";
+
+/** In-memory registry (per-isolate, demo only — production uses D1 telegram_users). */
+interface RegisteredUser { phone: string; name: string; role: string; company?: string; registeredAt: string; }
+const registry = new Map<number, RegisteredUser>();
 
 type Update = {
   message?: {
@@ -35,17 +43,25 @@ function menuKeyboard() {
       { label: "📄 کاتالوگ محصولات", url: `${SITE_URL}/api/catalog/html` },
     ],
     [
+      { label: "👤 داشبورد کاربری", url: `${SITE_URL}/login` },
       { label: "🤖 RAG آنالیز", url: SITE_URL },
-      { label: "📞 تلگرام ادمین", url: BOT_URL },
     ],
   ]);
+}
+
+function looksLikePhone(text: string): string | null {
+  const t = text.replace(/[\s\-+()]/g, "").replace(/^98(?=9\d{9}$)/, "0");
+  if (/^09\d{9}$/.test(t)) return t;
+  if (/^0\d{10}$/.test(t)) return t;
+  return null;
 }
 
 export async function GET() {
   return Response.json({
     ok: true,
     bot: "@Pars_sell_bot",
-    commands: ["/start", "/help", "/map", "/catalog", "/leads", "/rag", "/contact"],
+    commands: ["/start", "/help", "/map", "/catalog", "/leads", "/rag", "/contact", "/register", "/users", "/clinic"],
+    registeredCount: registry.size,
     note: "This route receives POST updates from Telegram when the webhook is registered.",
   });
 }
@@ -74,50 +90,133 @@ export async function POST(request: NextRequest) {
   const chatId = update.message?.chat?.id;
   const raw = (update.message?.text ?? "").trim();
   if (!chatId) return Response.json({ ok: true, ignored: true });
-  const cmd = raw.toLowerCase().startsWith("/") ? raw.toLowerCase().split("@")[0] : "text";
+  const lower = raw.toLowerCase();
+  const cmd = lower.startsWith("/") ? lower.split("@")[0] : "text";
+  const phone = looksLikePhone(raw);
 
   let text: string;
   let replyMarkup = menuKeyboard();
 
-  switch (cmd) {
-    case "/start":
+  if (cmd === "/register") {
+    text = [
+      "📱 <b>ثبت‌نام با شماره موبایل</b>",
+      "",
+      "شماره موبایل خود را ارسال کنید (مثال: 09121111111)",
+      "",
+      "حساب‌های دموی سامانه:",
+      ...demoAccounts.map((a) => `• ${a.name} — <code>${a.phone}</code> (${roleLabels[a.role]})`),
+      "",
+      "رمز همه حساب‌های دمو: demo123",
+    ].join("\n");
+  } else if (phone) {
+    const account = findByPhone(phone);
+    if (account) {
+      registry.set(chatId, {
+        phone: account.phone,
+        name: account.name,
+        role: roleLabels[account.role],
+        company: account.company,
+        registeredAt: new Date().toISOString(),
+      });
       text = [
-        "سلام! به ربات <b>BLDC Map Signal</b> خوش آمدید 👋",
+        "✅ <b>ثبت‌نام انجام شد</b>",
         "",
-        "من اعلان‌های مرکز عملیات موتورهای BLDC را برای شما ارسال می‌کنم و از طریق منوی زیر به بخش‌های مختلف سایت دسترسی دارید:",
-      ].join("\n");
-      break;
-    case "/help":
-      text = [
-        "<b>راهنمای ربات</b>",
+        `👤 ${account.name}`,
+        `🎭 نقش: ${roleLabels[account.role]}`,
+        `📱 موبایل: <code>${account.phone}</code>`,
+        account.company ? `🏢 شرکت: ${account.company}` : "",
         "",
-        "/map — نقشه فروشندگان ایران و جهانی",
-        "/catalog — کاتالوگ تجمیع‌شده محصولات",
-        "/leads — آمار بانک لیدها",
-        "/rag — آنالیز RAG کاتالوگ‌ها",
-        "/contact — راه‌های ارتباط",
-        "",
-        "برای خروج از دریافت اعلان‌ها کافی است بلاک کنید یا /start را در جای دیگری بزنید.",
-      ].join("\n");
-      break;
-    case "/map":
-      text = "🗺 <b>نقشه فروشندگان BLDC</b>\n۲۳ فروشنده و سازنده ایرانی + ۱۰۰ شرکت بین‌المللی (چین و سایر کشورها) روی نقشه تعاملی:";
-      break;
-    case "/catalog":
-      text = "📄 <b>کاتالوگ محصولات</b>\nنسخه HTML آماده چاپ کاتالوگ تجمیع‌شده (خانگی و صنعتی) را باز کنید:";
-      replyMarkup = keyboard([[{ label: "دانلود کاتالوگ HTML", url: `${SITE_URL}/api/catalog/html` }, { label: "CSV", url: `${SITE_URL}/api/catalog` }]]);
-      break;
-    case "/leads":
-      text = "📊 <b>بانک لیدها</b>\nاعلان هر لید جدید از همین ربات ارسال می‌شود. برای مشاهده کامل داشبورد از دکمه زیر استفاده کنید:";
-      break;
-    case "/rag":
-      text = "🤖 <b>RAG آنالیز کاتالوگ</b>\nآنالیز سمانتیک کاتالوگ‌های PDF (نیان موتور و HTI) در بخش RAG داشبورد:";
-      break;
-    case "/contact":
-      text = "📞 <b>ارتباط</b>\nInstagram: @yasinrou\nTelegram: @Pars_sell_bot\nسایت: parscell.exhibition2world.ir";
-      break;
-    default:
-      text = "برای استفاده از ربات، یک دستور از منو انتخاب کنید یا از دکمه‌های زیر استفاده کنید:";
+        "از این پس اعلان‌های مرتبط با نقش شما از همین ربات ارسال می‌شود.",
+      ].filter(Boolean).join("\n");
+      replyMarkup = keyboard([
+        [{ label: "ورود به داشبورد من", url: `${SITE_URL}/login` }],
+        [{ label: "مشاهده نقشه", url: SITE_URL }],
+      ]);
+    } else {
+      const clinic = clinicDemoUsers.find((c) => c.phone.replace(/[\s\-]/g, "") === phone);
+      if (clinic) {
+        registry.set(chatId, { phone, name: clinic.name, role: "مشتری کلینیک", registeredAt: new Date().toISOString() });
+        text = `✅ ثبت‌نام شد — ${clinic.name} (${clinic.note})\nپروفایل کلینیک دمو به ربات متصل شد.`;
+      } else {
+        text = [
+          "❌ شماره در پایگاه داده دمو یافت نشد.",
+          "",
+          "شماره‌های دموی BLDC:",
+          ...demoAccounts.map((a) => `<code>${a.phone}</code> — ${a.name}`),
+          "",
+          "شماره‌های دموی کلینیک:",
+          ...clinicDemoUsers.map((c) => `<code>${c.phone}</code> — ${c.name}`),
+        ].join("\n");
+      }
+    }
+  } else {
+    switch (cmd) {
+      case "/start":
+        text = [
+          "سلام! به ربات <b>BLDC Map Signal</b> خوش آمدید 👋",
+          "",
+          "من اعلان‌های مرکز عملیات موتورهای BLDC را ارسال می‌کنم و کاربران با شماره موبایل ثبت‌نام می‌شوند.",
+          "",
+          "📱 برای ثبت‌نام: /register",
+          "👥 کاربران دمو: /users",
+          "🏥 کاربران دموی کلینیک: /clinic",
+        ].join("\n");
+        break;
+      case "/help":
+        text = [
+          "<b>راهنمای ربات</b>",
+          "",
+          "/map — نقشه فروشندگان ایران و جهانی",
+          "/catalog — کاتالوگ تجمیع‌شده محصولات",
+          "/leads — آمار بانک لیدها",
+          "/rag — آنالیز RAG کاتالوگ‌ها",
+          "/register — ثبت‌نام با شماره موبایل",
+          "/users — کاربران دموی سامانه",
+          "/clinic — کاربران دموی کلینیک",
+          "/contact — راه‌های ارتباط",
+        ].join("\n");
+        break;
+      case "/map":
+        text = "🗺 <b>نقشه فروشندگان BLDC</b>\n۲۳ فروشنده و سازنده ایرانی + ۱۰۰ شرکت بین‌المللی (چین و سایر کشورها) با نمونه قیمت و تحلیل هزینه روی نقشه تعاملی:";
+        break;
+      case "/catalog":
+        text = "📄 <b>کاتالوگ محصولات</b>\nنسخه HTML آماده چاپ کاتالوگ تجمیع‌شده (خانگی و صنعتی) را باز کنید:";
+        replyMarkup = keyboard([[{ label: "دانلود کاتالوگ HTML", url: `${SITE_URL}/api/catalog/html` }, { label: "CSV", url: `${SITE_URL}/api/catalog` }]]);
+        break;
+      case "/leads":
+        text = "📊 <b>بانک لیدها</b>\nاعلان هر لید جدید از همین ربات ارسال می‌شود. برای مشاهده کامل داشبورد از دکمه زیر استفاده کنید:";
+        break;
+      case "/rag":
+        text = "🤖 <b>RAG آنالیز کاتالوگ</b>\nآنالیز سمانتیک کاتالوگ‌های PDF (نیان موتور و HTI) در بخش RAG داشبورد:";
+        break;
+      case "/users": {
+        const registered = [...registry.values()];
+        text = [
+          "👥 <b>کاربران دموی سامانه</b> (BLDC Map Signal)",
+          "",
+          ...demoAccounts.map((a) => `• ${a.name} — ${roleLabels[a.role]} — <code>${a.phone}</code>`),
+          "",
+          `📥 ثبت‌نام‌شده در ربات: ${registered.length} نفر`,
+          ...registered.map((r) => `• ${r.name} (${r.role})`),
+        ].join("\n");
+        replyMarkup = keyboard([[{ label: "ورود به داشبورد", url: `${SITE_URL}/login` }]]);
+        break;
+      }
+      case "/clinic":
+        text = [
+          "🏥 <b>کاربران دموی کلینیک</b> (Clinic Signal)",
+          "",
+          ...clinicDemoUsers.map((c) => `• ${c.name} — <code>${c.phone}</code> — ${c.note}`),
+          "",
+          "برای ثبت‌نام با شماره هر کلینیک، شماره را ارسال کنید.",
+        ].join("\n");
+        break;
+      case "/contact":
+        text = "📞 <b>ارتباط</b>\nInstagram: @yasinrou\nTelegram: @Pars_sell_bot\nسایت: parscell.exhibition2world.ir";
+        break;
+      default:
+        text = "برای استفاده از ربات، یک دستور از منو انتخاب کنید، یا برای ثبت‌نام شماره موبایل خود را بفرستید (/register):";
+    }
   }
 
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -135,5 +234,5 @@ export async function POST(request: NextRequest) {
   if (!response.ok || !data?.ok) {
     return Response.json({ ok: false }, { status: 502 });
   }
-  return Response.json({ ok: true, replied: cmd });
+  return Response.json({ ok: true, replied: cmd === "text" ? (phone ? "phone_registered" : "text") : cmd });
 }

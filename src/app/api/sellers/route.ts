@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sellers } from "@/app/data";
 import { globalSellers } from "@/app/data-global";
+import { priceInfo } from "@/app/pricing";
 
 export const runtime = "edge";
 
@@ -47,8 +48,19 @@ export function GET(request: NextRequest) {
     });
   }
 
+  const data = results.map((seller) => {
+    const pricing = priceInfo(seller);
+    return {
+      ...seller,
+      samplePricePerWatt: pricing.perWatt,
+      unitEstimateUsd: pricing.unitEstimate,
+      costSavingPct: pricing.savingPct,
+      priceTier: pricing.tier,
+    };
+  });
+
   return NextResponse.json({
-    data: results,
+    data,
     meta: {
       total: results.length,
       iran: scope === "world" ? pool.filter((s) => (s.country ?? "ایران") === "ایران").length : pool.length,

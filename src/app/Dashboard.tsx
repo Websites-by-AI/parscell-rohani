@@ -1,21 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity, ArrowLeft, AtSign, BarChart3, Bell, BookOpen, Bot, Building2, Check,
   CheckCircle2, ChevronDown, ChevronLeft, CircleHelp, ClipboardCheck, Code2, Download,
   ExternalLink, Factory, FileDown, FileText, Filter, Gauge, Globe2, Home, Layers3,
   LayoutDashboard, ListFilter, Map, MapPin, Menu, MessageSquareText, MoreHorizontal,
   PackageCheck, PanelRightClose, Plus, Radar, Search, Send, Settings, ShieldCheck,
-  SlidersHorizontal, Sparkles, Target, Upload, Users, X, Zap,
+  SlidersHorizontal, Sparkles, Target, Upload, User, Users, Wallet, X, Zap,
 } from "lucide-react";
 import { catalogRows, sellers, type Seller, type SellerType } from "./data";
 import { globalSellers } from "./data-global";
 import MultiMapViewer from "./components/MultiMapViewer";
 import RAGCatalogAnalyzer from "./components/RAGCatalogAnalyzer";
 import MessagingView from "./components/MessagingView";
+import AccountView from "./components/AccountView";
+import { priceInfo, tierLabel } from "./pricing";
 
-type View = "map" | "hti" | "catalog" | "rag" | "messages";
+type View = "map" | "hti" | "catalog" | "rag" | "messages" | "account";
 
 type NavItem = { label: string; icon: typeof Home; view?: View; badge?: string };
 
@@ -32,6 +34,10 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     { label: "ممیزی فنی", icon: ClipboardCheck },
     { label: "تولید کاتالوگ", icon: FileText, view: "catalog" },
     { label: "مرکز پیام‌رسانی", icon: Send, view: "messages", badge: "TG" },
+  ]},
+  { label: "حساب و دسترسی", items: [
+    { label: "حساب کاربری", icon: User, view: "account", badge: "دمو" },
+    { label: "ورود / ثبت‌نام", icon: ShieldCheck, view: "account", badge: "OTP" },
   ]},
 ];
 
@@ -53,10 +59,23 @@ export default function Dashboard() {
   const [scope, setScope] = useState<"iran" | "world">("iran");
   const [country, setCountry] = useState<string>("all");
   const [selected, setSelected] = useState<Seller>(sellers[0]);
-  const [leadIds, setLeadIds] = useState<number[]>([1, 7]);
+  const [leadIds, setLeadIds] = useState<number[]>(() => {
+    if (typeof window === "undefined") return [1, 7];
+    try {
+      const raw = window.localStorage.getItem("bldc_leads");
+      if (raw) return JSON.parse(raw) as number[];
+    } catch { /* ignore */ }
+    return [1, 7];
+  });
   const [toast, setToast] = useState("");
   const [showFilters, setShowFilters] = useState(true);
   const [mobileNav, setMobileNav] = useState(false);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("bldc_leads", JSON.stringify(leadIds));
+    } catch { /* ignore */ }
+  }, [leadIds]);
 
   const allSellers = useMemo<Seller[]>(
     () => (scope === "world" ? [...sellers, ...globalSellers] : sellers),
@@ -150,12 +169,12 @@ export default function Dashboard() {
       <div className="lg:mr-[260px]">
         <header className="sticky top-0 z-30 flex h-[72px] items-center border-b border-[#e4e8eb] bg-white/95 px-4 backdrop-blur md:px-7">
           <button className="ml-3 rounded-lg p-2 lg:hidden" onClick={() => setMobileNav(true)} aria-label="باز کردن منو"><Menu size={22}/></button>
-          <div className="hidden items-center gap-2 text-xs text-[#91999f] sm:flex"><span>BLDC Map Signal</span><ChevronLeft size={14}/><strong className="text-[#38434e]">{view === "map" ? "نقشه فروشندگان" : view === "hti" ? "HTI Snap Model" : view === "rag" ? "RAG آنالیز کاتالوگ" : view === "messages" ? "مرکز پیام‌رسانی" : "کاتالوگ نهایی"}</strong></div>
+          <div className="hidden items-center gap-2 text-xs text-[#91999f] sm:flex"><span>BLDC Map Signal</span><ChevronLeft size={14}/><strong className="text-[#38434e]">{view === "map" ? "نقشه فروشندگان" : view === "hti" ? "HTI Snap Model" : view === "rag" ? "RAG آنالیز کاتالوگ" : view === "messages" ? "مرکز پیام‌رسانی" : view === "account" ? "حساب کاربری" : "کاتالوگ نهایی"}</strong></div>
           <div className="mr-auto flex items-center gap-2.5">
             <div className="hidden items-center gap-2 rounded-full border border-[#dfe5e3] px-3 py-1.5 text-[10px] font-bold text-[#326252] md:flex"><span className="size-1.5 animate-pulse rounded-full bg-[#35a977]"/> API زنده متصل</div>
             <a href="https://t.me/Pars_sell_bot" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full border border-[#cfe3f1] bg-[#f2f9fd] px-3 py-1.5 text-[10px] font-black text-[#1e7ea8] transition hover:bg-[#e5f3fa]"><Send size={13}/> تلگرام</a>
             <button className="relative grid size-9 place-items-center rounded-full border border-[#e2e6e9] bg-white text-[#56616b]"><Bell size={17}/><span className="absolute left-1.5 top-1.5 size-1.5 rounded-full bg-[#e65b4f] ring-2 ring-white"/></button>
-            <button className="flex items-center gap-2 rounded-full border border-[#e2e6e9] py-1 pl-2 pr-1"><span className="grid size-7 place-items-center rounded-full bg-[#dceae4] text-[10px] font-black text-[#1c5749]">AM</span><ChevronDown className="hidden sm:block" size={13}/></button>
+            <button onClick={() => goTo("account")} className="flex items-center gap-2 rounded-full border border-[#e2e6e9] py-1 pl-2 pr-1" title="حساب کاربری"><span className="grid size-7 place-items-center rounded-full bg-[#dceae4] text-[10px] font-black text-[#1c5749]">AM</span><ChevronDown className="hidden sm:block" size={13}/></button>
           </div>
         </header>
 
@@ -163,8 +182,8 @@ export default function Dashboard() {
           <div className="mb-6 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
             <div>
               <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold text-[#23816a]"><span className="h-px w-6 bg-[#23816a]"/> مرکز عملیات بازار ایران</div>
-              <h1 className="text-[26px] font-black tracking-[-.02em] text-[#14211e] md:text-[32px]">{view === "map" ? "یابنده فروشنده BLDC" : view === "hti" ? "مدل Snapshot صنعتی HTI" : view === "rag" ? "RAG آنالیز کاتالوگ (Nian Motor)" : view === "messages" ? "مرکز پیام‌رسانی چندکاناله" : "کاتالوگ نهایی محصولات"}</h1>
-              <p className="mt-1.5 max-w-2xl text-xs leading-6 text-[#78828b]">{view === "map" ? "فروشنده، مونتاژکننده و سازنده را روی نقشه پیدا و برای ارزیابی انسانی آماده کنید — ایران و بازار جهانی." : view === "hti" ? "نمای یک‌صفحه‌ای اطلاعات عمومی، سیگنال‌های فنی و پیشنهاد اقدام بعدی." : view === "rag" ? "آنالیز هوشمند مشخصات فنی کاتالوگ‌های PDF (نیان موتور و HTI) با پردازش چانک‌های سمانتیک." : view === "messages" ? "ارسال اعلان‌ها و پیشنهادها از طریق ربات تلگرام با تأیید انسانی، حالت Dry Run و انطباق." : "تجمیع مشخصات عمومی از پین‌های بازبینی‌شده؛ پیش از خرید با فروشنده تأیید شود."}</p>
+              <h1 className="text-[26px] font-black tracking-[-.02em] text-[#14211e] md:text-[32px]">{view === "map" ? "یابنده فروشنده BLDC" : view === "hti" ? "مدل Snapshot صنعتی HTI" : view === "rag" ? "RAG آنالیز کاتالوگ (Nian Motor)" : view === "messages" ? "مرکز پیام‌رسانی چندکاناله" : view === "account" ? "حساب کاربری و داشبورد نقش‌محور" : "کاتالوگ نهایی محصولات"}</h1>
+              <p className="mt-1.5 max-w-2xl text-xs leading-6 text-[#78828b]">{view === "map" ? "فروشنده، مونتاژکننده و سازنده را روی نقشه پیدا و برای ارزیابی انسانی آماده کنید — ایران و بازار جهانی." : view === "hti" ? "نمای یک‌صفحه‌ای اطلاعات عمومی، سیگنال‌های فنی و پیشنهاد اقدام بعدی." : view === "rag" ? "آنالیز هوشمند مشخصات فنی کاتالوگ‌های PDF (نیان موتور و HTI) با پردازش چانک‌های سمانتیک." : view === "messages" ? "ارسال اعلان‌ها و پیشنهادها از طریق ربات تلگرام با تأیید انسانی، حالت Dry Run و انطباق." : view === "account" ? "داشبورد جداگانه برای ادمین، خریدار، فروشنده و مشتری — نسخه دمو با حساب‌های آماده و ورود با شماره موبایل." : "تجمیع مشخصات عمومی از پین‌های بازبینی‌شده؛ پیش از خرید با فروشنده تأیید شود."}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {view === "map" && <><a href="/api/catalog" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><Download size={16}/> خروجی CSV</a><a href="/api/sellers?format=csv&scope=world" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><Users size={16}/> CSV فروشندگان</a><button onClick={() => notify("حالت افزودن پین فعال شد — یک موقعیت روی نقشه انتخاب کنید")} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(24,63,54,.2)]"><Plus size={17}/> افزودن لید یا پین</button></>}
@@ -191,6 +210,7 @@ export default function Dashboard() {
           {view === "hti" && <HTIView onNotify={notify} onSendToTelegram={sendToTelegram}/>} 
           {view === "rag" && <RAGCatalogAnalyzer />}
           {view === "messages" && <MessagingView />}
+          {view === "account" && <AccountView />}
           {view === "catalog" && <CatalogView/>}
         </div>
       </div>
@@ -214,6 +234,7 @@ function MapView(props: {
 }) {
   const { filtered, selected, setSelected, addLead, leadIds, query, setQuery, type, setType, voltage, setVoltage, catalogOnly, setCatalogOnly, production, setProduction, showFilters, setShowFilters, goTo, scope, setScope, country, setCountry, countries } = props;
   const pr = priorityOf(selected.score);
+  const pi = priceInfo(selected);
   return <>
     <section className="mb-4 rounded-2xl border border-[#e3e7e9] bg-white p-3 shadow-sm">
       <div className="flex flex-col gap-2 lg:flex-row">
@@ -244,6 +265,7 @@ function MapView(props: {
           <div className="grid grid-cols-2 gap-2"><Mini label="امتیاز ممیزی" value={`${selected.score}/100`} strong/><Mini label="نوع فعالیت" value={selected.production}/><Mini label="توان" value={selected.power}/><Mini label="ولتاژ" value={selected.voltage}/></div>
           <div><div className="mb-2 text-[10px] font-bold text-[#929ba2]">محصولات اصلی</div><div className="flex flex-wrap gap-1.5">{selected.products.map((p) => <span key={p} className="rounded-md bg-[#f1f3f4] px-2 py-1 text-[10px] font-bold text-[#58636c]">{p}</span>)}</div></div>
           <div className="rounded-xl border border-[#e3e8e6] bg-[#f8faf9] p-3"><div className="mb-2 flex items-center justify-between text-[10px]"><span className="font-bold text-[#65716d]">اعتبار داده</span><span className="flex items-center gap-1 font-bold text-[#26735d]"><CheckCircle2 size={13}/> {selected.verified ? "بازبینی شده" : "نیازمند بازبینی"}</span></div><p className="text-[10px] leading-5 text-[#87908d]">منبع: {selected.source}<br/>آخرین بررسی: {selected.updated}</p></div>
+          <div className="rounded-xl border border-[#e3e8e6] bg-[#f8faf9] p-3"><div className="mb-2 flex items-center justify-between text-[10px]"><span className="font-bold text-[#65716d]">تحلیل هزینه (نمونه قیمت)</span><Wallet size={14} className="text-[#34735f]"/></div><div className="flex flex-wrap gap-1.5"><span className="rounded-md bg-white px-2 py-1 text-[10px] font-black text-[#225e4f]">{pi.perWatt}</span><span className="rounded-md bg-white px-2 py-1 text-[10px] font-black text-[#225e4f]">واحد: {pi.unitEstimate}</span><span className="rounded-md bg-[#f8eedb] px-2 py-1 text-[10px] font-black text-[#a0792c]">تا {pi.savingPct}٪ صرفه</span></div><p className="mt-2 text-[9px] leading-4 text-[#87908d]">{pi.bulkNote} · سطح: {tierLabel(pi.tier)}</p></div>
           <div className="flex gap-2"><button onClick={() => addLead(selected)} className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-xs font-extrabold ${leadIds.includes(selected.id) ? "bg-[#e8f3ef] text-[#226652]" : "bg-[#183f36] text-white"}`}>{leadIds.includes(selected.id) ? <><Check size={15}/> در بانک لیدها</> : <><Plus size={15}/> افزودن به لیدها</>}</button>{selected.id === 1 && <button onClick={() => goTo("hti")} className="grid size-10 place-items-center rounded-xl border border-[#dce2e0] text-[#256452]" title="نمای Snapshot"><Zap size={17}/></button>}</div>
           <div className="flex items-center justify-between border-t border-[#edf0f1] pt-3 text-[9px] text-[#959da3]"><span>فقط اطلاعات عمومی — با فروشنده تأیید شود</span><CircleHelp size={13}/></div>
         </div>
@@ -252,8 +274,10 @@ function MapView(props: {
 
     <section className="mt-4 overflow-hidden rounded-2xl border border-[#e1e5e7] bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-[#e8ebed] px-5 py-4"><div><h3 className="text-sm font-black">نتایج نزدیک به فیلتر شما</h3><p className="mt-1 text-[10px] text-[#8b949b]">مرتب‌شده بر اساس امتیاز فنی — اولویت P1/P2/P3</p></div><span className="rounded-md bg-[#f2f4f4] px-2 py-1 text-[10px] font-bold text-[#7c868d]">{filtered.length} نتیجه</span></div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-right text-[11px]"><thead className="bg-[#fafbfb] text-[9px] font-bold text-[#90999f]"><tr><th className="px-5 py-3">شرکت</th><th>کشور / منطقه</th><th>محصول اصلی</th><th>دسته</th><th>امتیاز</th><th>اولویت</th><th>وضعیت</th><th></th></tr></thead><tbody>{filtered.slice().sort((a,b) => b.score-a.score).slice(0,8).map((s) => { const p = priorityOf(s.score); return <tr key={s.id} onClick={() => setSelected(s)} className="cursor-pointer border-t border-[#edf0f2] transition hover:bg-[#f8faf9]"><td className="px-5 py-3.5 font-black text-[#27343d]">{s.name}</td><td className="text-[#6f7a83]">{s.country ?? "ایران"} · {s.city}</td><td className="text-[#6f7a83]">{s.products[0]}</td><td><span className="rounded-md bg-[#f0f3f4] px-2 py-1">{typeLabels[s.type]}</span></td><td><span className="font-black text-[#225e4f]">{s.score}</span><span className="text-[#afb5ba]">/100</span></td><td><span className={`rounded-md px-2 py-1 font-black ${p.cls}`}>{p.label}</span></td><td>{s.catalog ? <span className="text-[#28725f]">● کاتالوگ دارد</span> : <span className="text-[#a17a38]">● در انتظار</span>}</td><td><ChevronLeft size={15} className="text-[#a6adb2]"/></td></tr>; })}</tbody></table></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-right text-[11px]"><thead className="bg-[#fafbfb] text-[9px] font-bold text-[#90999f]"><tr><th className="px-5 py-3">شرکت</th><th>کشور / منطقه</th><th>محصول اصلی</th><th>دسته</th><th>امتیاز</th><th>نمونه قیمت</th><th>اولویت</th><th>وضعیت</th><th></th></tr></thead><tbody>{filtered.slice().sort((a,b) => b.score-a.score).slice(0,8).map((s) => { const p = priorityOf(s.score); const sp = priceInfo(s); return <tr key={s.id} onClick={() => setSelected(s)} className="cursor-pointer border-t border-[#edf0f2] transition hover:bg-[#f8faf9]"><td className="px-5 py-3.5 font-black text-[#27343d]">{s.name}</td><td className="text-[#6f7a83]">{s.country ?? "ایران"} · {s.city}</td><td className="text-[#6f7a83]">{s.products[0]}</td><td><span className="rounded-md bg-[#f0f3f4] px-2 py-1">{typeLabels[s.type]}</span></td><td><span className="font-black text-[#225e4f]">{s.score}</span><span className="text-[#afb5ba]">/100</span></td><td><span className="rounded-md bg-[#e9f4ef] px-2 py-1 font-black text-[#21725d]" dir="ltr">{sp.perWatt}</span></td><td><span className={`rounded-md px-2 py-1 font-black ${p.cls}`}>{p.label}</span></td><td>{s.catalog ? <span className="text-[#28725f]">● کاتالوگ دارد</span> : <span className="text-[#a17a38]">● در انتظار</span>}</td><td><ChevronLeft size={15} className="text-[#a6adb2]"/></td></tr>; })}</tbody></table></div>
     </section>
+
+    <RegionalAnalysis items={filtered}/>
   </>;
 }
 
@@ -263,6 +287,45 @@ function Segment({ value, onChange, options }: { value: string; onChange: (v:str
 
 function FilterSelect({ value, onChange, options, icon }: { value:string; onChange:(v:string)=>void; options:{v:string;l:string}[]; icon?:string }) {
   return <label className="relative"><select aria-label={icon ?? options[0].l} value={value} onChange={(e)=>onChange(e.target.value)} className="h-9 appearance-none rounded-lg border border-[#e0e4e7] bg-white py-0 pr-3 pl-8 text-[11px] font-bold text-[#66717a] outline-none"><>{options.map(o => <option value={o.v} key={o.v}>{o.l}</option>)}</></select><ChevronDown className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#899298]" size={13}/></label>;
+}
+
+function RegionalAnalysis({ items }: { items: Seller[] }) {
+  if (items.length === 0) return null;
+  const top = items.slice().sort((a, b) => b.powerMax - a.powerMax).slice(0, 5);
+  const avgSave = Math.round(items.reduce((acc, s) => acc + priceInfo(s).savingPct, 0) / items.length);
+  const byRegion: Record<string, number> = {};
+  items.forEach((s) => { const k = s.country ?? "ایران"; byRegion[k] = (byRegion[k] ?? 0) + 1; });
+  const topRegions = Object.entries(byRegion).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  return (
+    <section className="mt-4 rounded-2xl border border-[#e1e5e7] bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="grid size-8 place-items-center rounded-lg bg-[#ebf3f0] text-[#286854]"><BarChart3 size={16}/></span>
+        <h3 className="text-sm font-black">تحلیل منطقه — شرکت‌های بزرگ</h3>
+        <span className="mr-auto flex flex-wrap gap-1.5">
+          <span className="rounded-md bg-[#f2f4f4] px-2 py-1 text-[9px] font-bold text-[#7c868d]">{items.length} شرکت در فیلتر</span>
+          <span className="rounded-md bg-[#f8eedb] px-2 py-1 text-[9px] font-black text-[#a0792c]">میانگین صرفه‌جویی عمده: {avgSave}٪</span>
+          {topRegions.map(([r, n]) => <span key={r} className="rounded-md bg-[#e9f4ef] px-2 py-1 text-[9px] font-black text-[#21725d]">{r}: {n}</span>)}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+        {top.map((s) => {
+          const sp = priceInfo(s);
+          return (
+            <div key={s.id} className="rounded-xl border border-[#e5e9e8] p-3">
+              <div className="text-[10px] font-black text-[#27343d]">{s.name}</div>
+              <div className="mt-0.5 text-[9px] text-[#8b949b]">{s.country ?? "ایران"} · {s.city} · {s.power}</div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                <span className="rounded bg-[#e9f4ef] px-1.5 py-0.5 text-[8px] font-black text-[#21725d]" dir="ltr">{sp.perWatt}</span>
+                <span className="rounded bg-[#f2f4f4] px-1.5 py-0.5 text-[8px] font-black text-[#58636c]" dir="ltr">{sp.unitEstimate}</span>
+                <span className="rounded bg-[#f8eedb] px-1.5 py-0.5 text-[8px] font-black text-[#a0792c]">-{sp.savingPct}٪</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[9px] leading-4 text-[#899299]">تحلیل تخمینی بر اساس توان، منطقه و کلاس قیمت — نمونه قیمت است و پیش از سفارش باید با فروشنده تأیید شود.</p>
+    </section>
+  );
 }
 
 function Mini({ label, value, strong }: { label:string;value:string;strong?:boolean }) { return <div className="rounded-xl bg-[#f6f8f8] p-2.5"><div className="text-[9px] text-[#929ba1]">{label}</div><div className={`mt-1 text-[10px] font-black ${strong ? "text-[#21715c]" : "text-[#3e4a52]"}`}>{value}</div></div>; }
