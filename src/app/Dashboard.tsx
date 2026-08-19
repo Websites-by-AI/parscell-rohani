@@ -10,10 +10,12 @@ import {
   SlidersHorizontal, Sparkles, Target, Upload, Users, X, Zap,
 } from "lucide-react";
 import { catalogRows, sellers, type Seller, type SellerType } from "./data";
+import { globalSellers } from "./data-global";
 import MultiMapViewer from "./components/MultiMapViewer";
 import RAGCatalogAnalyzer from "./components/RAGCatalogAnalyzer";
+import MessagingView from "./components/MessagingView";
 
-type View = "map" | "hti" | "catalog" | "rag";
+type View = "map" | "hti" | "catalog" | "rag" | "messages";
 
 type NavItem = { label: string; icon: typeof Home; view?: View; badge?: string };
 
@@ -29,11 +31,17 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     { label: "RAG آنالیز کاتالوگ", icon: Sparkles, view: "rag", badge: "RAG" },
     { label: "ممیزی فنی", icon: ClipboardCheck },
     { label: "تولید کاتالوگ", icon: FileText, view: "catalog" },
-    { label: "مرکز پیام‌رسانی", icon: Send },
+    { label: "مرکز پیام‌رسانی", icon: Send, view: "messages", badge: "TG" },
   ]},
 ];
 
 const typeLabels: Record<SellerType, string> = { household: "خانگی", industrial: "صنعتی", both: "هر دو" };
+
+function priorityOf(score: number): { label: string; cls: string } {
+  if (score >= 85) return { label: "P1", cls: "bg-[#f9e7e4] text-[#b04a40]" };
+  if (score >= 70) return { label: "P2", cls: "bg-[#f8eedb] text-[#a0792c]" };
+  return { label: "P3", cls: "bg-[#e8f1f8] text-[#3a6e9c]" };
+}
 
 export default function Dashboard() {
   const [view, setView] = useState<View>("map");
@@ -42,20 +50,33 @@ export default function Dashboard() {
   const [voltage, setVoltage] = useState<"all" | "low" | "high">("all");
   const [catalogOnly, setCatalogOnly] = useState(false);
   const [production, setProduction] = useState("all");
+  const [scope, setScope] = useState<"iran" | "world">("iran");
+  const [country, setCountry] = useState<string>("all");
   const [selected, setSelected] = useState<Seller>(sellers[0]);
   const [leadIds, setLeadIds] = useState<number[]>([1, 7]);
   const [toast, setToast] = useState("");
   const [showFilters, setShowFilters] = useState(true);
   const [mobileNav, setMobileNav] = useState(false);
 
-  const filtered = useMemo(() => sellers.filter((seller) => {
-    const haystack = [seller.name, seller.city, seller.zone, ...seller.products].join(" ").toLowerCase();
+  const allSellers = useMemo<Seller[]>(
+    () => (scope === "world" ? [...sellers, ...globalSellers] : sellers),
+    [scope]
+  );
+
+  const worldCountries = useMemo(
+    () => Array.from(new Set(globalSellers.map((s) => s.country ?? "نامشخص"))).sort(),
+    []
+  );
+
+  const filtered = useMemo(() => allSellers.filter((seller) => {
+    const haystack = [seller.name, seller.city, seller.zone, seller.country ?? "", ...seller.products].join(" ").toLowerCase();
     return (!query || haystack.includes(query.toLowerCase())) &&
       (type === "all" || seller.type === type || seller.type === "both") &&
       (voltage === "all" || seller.voltageClass === voltage) &&
       (!catalogOnly || seller.catalog) &&
-      (production === "all" || seller.production === production);
-  }), [query, type, voltage, catalogOnly, production]);
+      (production === "all" || seller.production === production) &&
+      (scope === "iran" || country === "all" || (seller.country ?? "") === country);
+  }), [allSellers, query, type, voltage, catalogOnly, production, scope, country]);
 
   function notify(message: string) {
     setToast(message);
@@ -129,7 +150,7 @@ export default function Dashboard() {
       <div className="lg:mr-[260px]">
         <header className="sticky top-0 z-30 flex h-[72px] items-center border-b border-[#e4e8eb] bg-white/95 px-4 backdrop-blur md:px-7">
           <button className="ml-3 rounded-lg p-2 lg:hidden" onClick={() => setMobileNav(true)} aria-label="باز کردن منو"><Menu size={22}/></button>
-          <div className="hidden items-center gap-2 text-xs text-[#91999f] sm:flex"><span>BLDC Map Signal</span><ChevronLeft size={14}/><strong className="text-[#38434e]">{view === "map" ? "نقشه فروشندگان" : view === "hti" ? "HTI Snap Model" : view === "rag" ? "RAG آنالیز کاتالوگ" : "کاتالوگ نهایی"}</strong></div>
+          <div className="hidden items-center gap-2 text-xs text-[#91999f] sm:flex"><span>BLDC Map Signal</span><ChevronLeft size={14}/><strong className="text-[#38434e]">{view === "map" ? "نقشه فروشندگان" : view === "hti" ? "HTI Snap Model" : view === "rag" ? "RAG آنالیز کاتالوگ" : view === "messages" ? "مرکز پیام‌رسانی" : "کاتالوگ نهایی"}</strong></div>
           <div className="mr-auto flex items-center gap-2.5">
             <div className="hidden items-center gap-2 rounded-full border border-[#dfe5e3] px-3 py-1.5 text-[10px] font-bold text-[#326252] md:flex"><span className="size-1.5 animate-pulse rounded-full bg-[#35a977]"/> API زنده متصل</div>
             <a href="https://t.me/Pars_sell_bot" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full border border-[#cfe3f1] bg-[#f2f9fd] px-3 py-1.5 text-[10px] font-black text-[#1e7ea8] transition hover:bg-[#e5f3fa]"><Send size={13}/> تلگرام</a>
@@ -142,11 +163,11 @@ export default function Dashboard() {
           <div className="mb-6 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
             <div>
               <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold text-[#23816a]"><span className="h-px w-6 bg-[#23816a]"/> مرکز عملیات بازار ایران</div>
-              <h1 className="text-[26px] font-black tracking-[-.02em] text-[#14211e] md:text-[32px]">{view === "map" ? "یابنده فروشنده BLDC" : view === "hti" ? "مدل Snapshot صنعتی HTI" : view === "rag" ? "RAG آنالیز کاتالوگ (Nian Motor)" : "کاتالوگ نهایی محصولات"}</h1>
-              <p className="mt-1.5 max-w-2xl text-xs leading-6 text-[#78828b]">{view === "map" ? "فروشنده، مونتاژکننده و سازنده را روی نقشه پیدا و برای ارزیابی انسانی آماده کنید." : view === "hti" ? "نمای یک‌صفحه‌ای اطلاعات عمومی، سیگنال‌های فنی و پیشنهاد اقدام بعدی." : view === "rag" ? "آنالیز هوشمند مشخصات فنی کاتالوگ‌های PDF (نیان موتور و HTI) با پردازش چانک‌های سمانتیک." : "تجمیع مشخصات عمومی از پین‌های بازبینی‌شده؛ پیش از خرید با فروشنده تأیید شود."}</p>
+              <h1 className="text-[26px] font-black tracking-[-.02em] text-[#14211e] md:text-[32px]">{view === "map" ? "یابنده فروشنده BLDC" : view === "hti" ? "مدل Snapshot صنعتی HTI" : view === "rag" ? "RAG آنالیز کاتالوگ (Nian Motor)" : view === "messages" ? "مرکز پیام‌رسانی چندکاناله" : "کاتالوگ نهایی محصولات"}</h1>
+              <p className="mt-1.5 max-w-2xl text-xs leading-6 text-[#78828b]">{view === "map" ? "فروشنده، مونتاژکننده و سازنده را روی نقشه پیدا و برای ارزیابی انسانی آماده کنید — ایران و بازار جهانی." : view === "hti" ? "نمای یک‌صفحه‌ای اطلاعات عمومی، سیگنال‌های فنی و پیشنهاد اقدام بعدی." : view === "rag" ? "آنالیز هوشمند مشخصات فنی کاتالوگ‌های PDF (نیان موتور و HTI) با پردازش چانک‌های سمانتیک." : view === "messages" ? "ارسال اعلان‌ها و پیشنهادها از طریق ربات تلگرام با تأیید انسانی، حالت Dry Run و انطباق." : "تجمیع مشخصات عمومی از پین‌های بازبینی‌شده؛ پیش از خرید با فروشنده تأیید شود."}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {view === "map" && <><a href="/api/catalog" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><Download size={16}/> خروجی CSV</a><button onClick={() => notify("حالت افزودن پین فعال شد — یک موقعیت روی نقشه انتخاب کنید")} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(24,63,54,.2)]"><Plus size={17}/> افزودن لید یا پین</button></>}
+              {view === "map" && <><a href="/api/catalog" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><Download size={16}/> خروجی CSV</a><a href="/api/sellers?format=csv&scope=world" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><Users size={16}/> CSV فروشندگان</a><button onClick={() => notify("حالت افزودن پین فعال شد — یک موقعیت روی نقشه انتخاب کنید")} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(24,63,54,.2)]"><Plus size={17}/> افزودن لید یا پین</button></>}
               {view === "hti" && <><button onClick={() => void sendToTelegram({ topic: "proposal_ready", title: "Industrial Custom + Technical Recovery — HTI", details: ["بازسازی دیتاشیت‌های کاربردمحور", "تفکیک صفحات محصول بر اساس صنعت", "بسته اثبات فنی و پروژه‌های مرجع", "قیف درخواست نمونه و استعلام مهندسی"] })} className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold"><MessageSquareText size={16}/> ارسال به پیام‌رسانی</button><button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white"><FileDown size={16}/> تولید Proposal PDF</button></>}
               {view === "rag" && <><a href="https://nianmotor.ir/wp-content/uploads/2025/08/Nian-Motor-Catalog.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><ExternalLink size={16}/> لینک Nian Motor Catalog</a><button onClick={() => notify("پایگاه دانش RAG به‌روزرسانی شد")} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(24,63,54,.2)]"><Sparkles size={16}/> به‌روزرسانی Vector Index</button></>}
               {view === "catalog" && <><button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold"><FileDown size={16}/> نسخه PDF</button><a href="/api/catalog/html" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b]"><Code2 size={16}/> دانلود HTML</a><a href="/api/catalog" className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white"><Download size={16}/> دانلود CSV</a></>}
@@ -154,10 +175,10 @@ export default function Dashboard() {
           </div>
 
           <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Stat label="پین فعال ایران" value="41" sub="+۶ این ماه" icon={MapPin} color="green"/>
-            <Stat label="بازبینی انسانی" value="34" sub="٪۸۳ پوشش" icon={CheckCircle2} color="blue"/>
-            <Stat label="دارای کاتالوگ" value="27" sub="منبع عمومی" icon={BookOpen} color="amber"/>
-            <Stat label="لید اولویت‌بالا" value="8" sub="امتیاز +۸۵" icon={Target} color="red"/>
+            <Stat label={scope === "world" ? "پین فعال جهانی" : "پین فعال ایران"} value={String(filtered.length)} sub={scope === "world" ? "ایران + ۱۰۰ شرکت بین‌المللی" : "۲۳ شرکت داخلی"} icon={MapPin} color="green"/>
+            <Stat label="بازبینی انسانی" value={String(filtered.filter((s) => s.verified).length)} sub="٪ پوشش تأیید" icon={CheckCircle2} color="blue"/>
+            <Stat label="دارای کاتالوگ" value={String(filtered.filter((s) => s.catalog).length)} sub="منبع عمومی" icon={BookOpen} color="amber"/>
+            <Stat label="لید اولویت‌بالا" value={String(filtered.filter((s) => s.score >= 85).length)} sub="امتیاز +۸۵ · P1" icon={Target} color="red"/>
           </div>
 
           {view === "map" && <MapView
@@ -165,9 +186,11 @@ export default function Dashboard() {
             query={query} setQuery={setQuery} type={type} setType={setType} voltage={voltage} setVoltage={setVoltage}
             catalogOnly={catalogOnly} setCatalogOnly={setCatalogOnly} production={production} setProduction={setProduction}
             showFilters={showFilters} setShowFilters={setShowFilters} goTo={goTo}
+            scope={scope} setScope={setScope} country={country} setCountry={setCountry} countries={worldCountries}
           />}
           {view === "hti" && <HTIView onNotify={notify} onSendToTelegram={sendToTelegram}/>} 
           {view === "rag" && <RAGCatalogAnalyzer />}
+          {view === "messages" && <MessagingView />}
           {view === "catalog" && <CatalogView/>}
         </div>
       </div>
@@ -187,22 +210,26 @@ function MapView(props: {
   query: string; setQuery: (v: string) => void; type: "all" | SellerType; setType: (v: "all" | SellerType) => void;
   voltage: "all" | "low" | "high"; setVoltage: (v: "all" | "low" | "high") => void; catalogOnly: boolean; setCatalogOnly: (v: boolean) => void;
   production: string; setProduction: (v: string) => void; showFilters: boolean; setShowFilters: (v: boolean) => void; goTo: (v: View) => void;
+  scope: "iran" | "world"; setScope: (v: "iran" | "world") => void; country: string; setCountry: (v: string) => void; countries: string[];
 }) {
-  const { filtered, selected, setSelected, addLead, leadIds, query, setQuery, type, setType, voltage, setVoltage, catalogOnly, setCatalogOnly, production, setProduction, showFilters, setShowFilters, goTo } = props;
+  const { filtered, selected, setSelected, addLead, leadIds, query, setQuery, type, setType, voltage, setVoltage, catalogOnly, setCatalogOnly, production, setProduction, showFilters, setShowFilters, goTo, scope, setScope, country, setCountry, countries } = props;
+  const pr = priorityOf(selected.score);
   return <>
     <section className="mb-4 rounded-2xl border border-[#e3e7e9] bg-white p-3 shadow-sm">
       <div className="flex flex-col gap-2 lg:flex-row">
-        <div className="relative flex-1"><Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#89939b]" size={18}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="جست‌وجوی شهر، شرکت یا محصول — مثلاً فن BLDC، درایو صنعتی..." className="h-11 w-full rounded-xl border border-[#dde2e5] bg-[#fafbfb] pr-11 pl-4 text-xs outline-none transition focus:border-[#71a99a] focus:bg-white focus:ring-3 focus:ring-[#dceee8]"/></div>
+        <div className="relative flex-1"><Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#89939b]" size={18}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={scope === "world" ? "جست‌وجوی شرکت، کشور یا محصول — مثلاً Shenzhen، فن BLDC، پمپ..." : "جست‌وجوی شهر، شرکت یا محصول — مثلاً فن BLDC، درایو صنعتی..."} className="h-11 w-full rounded-xl border border-[#dde2e5] bg-[#fafbfb] pr-11 pl-4 text-xs outline-none transition focus:border-[#71a99a] focus:bg-white focus:ring-3 focus:ring-[#dceee8]"/></div>
         <div className="flex gap-2 overflow-x-auto">
+          <Segment value={scope} onChange={(value) => { setScope(value as "iran" | "world"); setCountry("all"); }} options={[{v:"iran",l:"🇮🇷 ایران"},{v:"world",l:"🌍 جهانی + چین"}]}/>
           <Segment value={type} onChange={(value) => setType(value as "all" | SellerType)} options={[{v:"all",l:"همه"},{v:"household",l:"خانگی"},{v:"industrial",l:"صنعتی"}]}/>
           <button onClick={() => setShowFilters(!showFilters)} className={`flex h-11 shrink-0 items-center gap-2 rounded-xl border px-4 text-xs font-bold ${showFilters ? "border-[#8db4a9] bg-[#eff6f3] text-[#235f50]" : "border-[#dde2e5]"}`}><SlidersHorizontal size={16}/> فیلترها</button>
         </div>
       </div>
       {showFilters && <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#edf0f1] pt-3">
+        {scope === "world" && <FilterSelect value={country} onChange={setCountry} options={[{v:"all",l:`همه کشورها (${countries.length})`},...countries.map((c) => ({v:c,l:c}))]} icon="کشور"/>}
         <FilterSelect value={voltage} onChange={(v) => setVoltage(v as "all" | "low" | "high")} options={[{v:"all",l:"همه ولتاژها"},{v:"low",l:"12–48 V"},{v:"high",l:"220–380 V"}]} icon="ولتاژ"/>
         <FilterSelect value={production} onChange={setProduction} options={[{v:"all",l:"نوع فعالیت"},{v:"تولید محلی",l:"تولید محلی"},{v:"مونتاژ",l:"مونتاژ"},{v:"واردات + مونتاژ",l:"واردات + مونتاژ"}]}/>
         <button onClick={() => setCatalogOnly(!catalogOnly)} className={`h-9 rounded-lg border px-3 text-[11px] font-bold ${catalogOnly ? "border-[#79aa9d] bg-[#eaf4f0] text-[#226652]" : "border-[#e0e4e7] text-[#66717a]"}`}><FileText className="ml-1.5 inline" size={14}/> دارای کاتالوگ</button>
-        <button onClick={() => { setVoltage("all"); setProduction("all"); setCatalogOnly(false); setQuery(""); setType("all"); }} className="mr-auto px-2 text-[10px] font-bold text-[#9a625b]">پاک‌کردن فیلترها</button>
+        <button onClick={() => { setVoltage("all"); setProduction("all"); setCatalogOnly(false); setQuery(""); setType("all"); setCountry("all"); }} className="mr-auto px-2 text-[10px] font-bold text-[#9a625b]">پاک‌کردن فیلترها</button>
       </div>}
     </section>
 
@@ -212,7 +239,7 @@ function MapView(props: {
       </section>
 
       <aside className="overflow-hidden rounded-2xl border border-[#e1e5e7] bg-white shadow-sm">
-        <div className="border-b border-[#e8ebed] p-4"><div className="flex items-center justify-between"><span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${selected.type === "industrial" ? "bg-[#fbe9e7] text-[#b94f45]" : selected.type === "household" ? "bg-[#e8f1f8] text-[#346c9d]" : "bg-[#eeeaf7] text-[#6d5790]"}`}>{typeLabels[selected.type]}</span><button className="text-[#8d969d]"><MoreHorizontal size={19}/></button></div><div className="mt-4 flex items-start gap-3"><div className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#edf3f1] text-sm font-black text-[#245f51]">{selected.shortName}</div><div><h2 className="text-[16px] font-black text-[#1b282f]">{selected.name}</h2><p className="mt-1 flex items-center gap-1 text-[10px] text-[#7f8991]"><MapPin size={12}/>{selected.city} · {selected.zone}</p></div></div></div>
+        <div className="border-b border-[#e8ebed] p-4"><div className="flex items-center justify-between"><span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${selected.type === "industrial" ? "bg-[#fbe9e7] text-[#b94f45]" : selected.type === "household" ? "bg-[#e8f1f8] text-[#346c9d]" : "bg-[#eeeaf7] text-[#6d5790]"}`}>{typeLabels[selected.type]}</span><div className="flex items-center gap-1.5"><span className={`rounded-md px-2 py-1 text-[10px] font-black ${pr.cls}`}>{pr.label}</span><button className="text-[#8d969d]"><MoreHorizontal size={19}/></button></div></div><div className="mt-4 flex items-start gap-3"><div className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#edf3f1] text-sm font-black text-[#245f51]">{selected.shortName}</div><div><h2 className="text-[16px] font-black text-[#1b282f]">{selected.name}</h2><p className="mt-1 flex items-center gap-1 text-[10px] text-[#7f8991]"><MapPin size={12}/>{selected.city} · {selected.zone}{selected.country ? ` · ${selected.country}` : ""}</p></div></div></div>
         <div className="space-y-4 p-4">
           <div className="grid grid-cols-2 gap-2"><Mini label="امتیاز ممیزی" value={`${selected.score}/100`} strong/><Mini label="نوع فعالیت" value={selected.production}/><Mini label="توان" value={selected.power}/><Mini label="ولتاژ" value={selected.voltage}/></div>
           <div><div className="mb-2 text-[10px] font-bold text-[#929ba2]">محصولات اصلی</div><div className="flex flex-wrap gap-1.5">{selected.products.map((p) => <span key={p} className="rounded-md bg-[#f1f3f4] px-2 py-1 text-[10px] font-bold text-[#58636c]">{p}</span>)}</div></div>
@@ -224,8 +251,8 @@ function MapView(props: {
     </div>
 
     <section className="mt-4 overflow-hidden rounded-2xl border border-[#e1e5e7] bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-[#e8ebed] px-5 py-4"><div><h3 className="text-sm font-black">نتایج نزدیک به فیلتر شما</h3><p className="mt-1 text-[10px] text-[#8b949b]">مرتب‌شده بر اساس امتیاز فنی و تناسب محصول</p></div><button className="text-[10px] font-bold text-[#2b6a59]">مشاهده همه <ArrowLeft className="inline" size={13}/></button></div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-right text-[11px]"><thead className="bg-[#fafbfb] text-[9px] font-bold text-[#90999f]"><tr><th className="px-5 py-3">شرکت</th><th>شهر / منطقه</th><th>محصول اصلی</th><th>دسته</th><th>امتیاز</th><th>وضعیت</th><th></th></tr></thead><tbody>{filtered.slice().sort((a,b) => b.score-a.score).slice(0,5).map((s) => <tr key={s.id} onClick={() => setSelected(s)} className="cursor-pointer border-t border-[#edf0f2] transition hover:bg-[#f8faf9]"><td className="px-5 py-3.5 font-black text-[#27343d]">{s.name}</td><td className="text-[#6f7a83]">{s.city} · {s.zone}</td><td className="text-[#6f7a83]">{s.products[0]}</td><td><span className="rounded-md bg-[#f0f3f4] px-2 py-1">{typeLabels[s.type]}</span></td><td><span className="font-black text-[#225e4f]">{s.score}</span><span className="text-[#afb5ba]">/100</span></td><td>{s.catalog ? <span className="text-[#28725f]">● کاتالوگ دارد</span> : <span className="text-[#a17a38]">● در انتظار</span>}</td><td><ChevronLeft size={15} className="text-[#a6adb2]"/></td></tr>)}</tbody></table></div>
+      <div className="flex items-center justify-between border-b border-[#e8ebed] px-5 py-4"><div><h3 className="text-sm font-black">نتایج نزدیک به فیلتر شما</h3><p className="mt-1 text-[10px] text-[#8b949b]">مرتب‌شده بر اساس امتیاز فنی — اولویت P1/P2/P3</p></div><span className="rounded-md bg-[#f2f4f4] px-2 py-1 text-[10px] font-bold text-[#7c868d]">{filtered.length} نتیجه</span></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-right text-[11px]"><thead className="bg-[#fafbfb] text-[9px] font-bold text-[#90999f]"><tr><th className="px-5 py-3">شرکت</th><th>کشور / منطقه</th><th>محصول اصلی</th><th>دسته</th><th>امتیاز</th><th>اولویت</th><th>وضعیت</th><th></th></tr></thead><tbody>{filtered.slice().sort((a,b) => b.score-a.score).slice(0,8).map((s) => { const p = priorityOf(s.score); return <tr key={s.id} onClick={() => setSelected(s)} className="cursor-pointer border-t border-[#edf0f2] transition hover:bg-[#f8faf9]"><td className="px-5 py-3.5 font-black text-[#27343d]">{s.name}</td><td className="text-[#6f7a83]">{s.country ?? "ایران"} · {s.city}</td><td className="text-[#6f7a83]">{s.products[0]}</td><td><span className="rounded-md bg-[#f0f3f4] px-2 py-1">{typeLabels[s.type]}</span></td><td><span className="font-black text-[#225e4f]">{s.score}</span><span className="text-[#afb5ba]">/100</span></td><td><span className={`rounded-md px-2 py-1 font-black ${p.cls}`}>{p.label}</span></td><td>{s.catalog ? <span className="text-[#28725f]">● کاتالوگ دارد</span> : <span className="text-[#a17a38]">● در انتظار</span>}</td><td><ChevronLeft size={15} className="text-[#a6adb2]"/></td></tr>; })}</tbody></table></div>
     </section>
   </>;
 }

@@ -54,6 +54,16 @@ export default function MultiMapViewer({ sellers, selected, onSelect }: MultiMap
   selectedIdRef.current = selected?.id;
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
+  // World scope = any seller outside Iran is present; the Iran-only vector
+  // schematic map is hidden in that case.
+  const isWorld = sellers.some((s) => s.country && s.country !== "ایران");
+
+  // If the scope switches to world while the Iran vector map is active,
+  // fall back to the Google road tiles.
+  useEffect(() => {
+    if (isWorld && provider === "vector-svg") setProvider("google-road");
+  }, [isWorld, provider]);
+
   // Initialize Leaflet map client-side
   useEffect(() => {
     if (typeof window === "undefined" || !mapContainerRef.current) return;
@@ -121,7 +131,7 @@ export default function MultiMapViewer({ sellers, selected, onSelect }: MultiMap
             const popupContent = `
               <div style="font-family: Tahoma, sans-serif; text-align: right; padding: 2px;">
                 <div style="font-weight: 800; font-size: 13px; color: #1e2b35;">${seller.name}</div>
-                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">📍 ${seller.city} · ${seller.zone}</div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">📍 ${seller.city} · ${seller.zone}${seller.country ? ` · ${seller.country}` : ""}</div>
                 <div style="font-size: 11px; color: #0284c7; font-weight: 700; margin-top: 4px;">⚡ ${seller.power} | ${seller.voltage}</div>
                 <div style="font-size: 10px; background: #f1f5f9; padding: 3px 6px; border-radius: 6px; margin-top: 6px; display: inline-block;">
                   امتیاز فنی: <b>${seller.score}/100</b>
@@ -136,6 +146,23 @@ export default function MultiMapViewer({ sellers, selected, onSelect }: MultiMap
 
             markersRef.current.set(seller.id, marker);
           });
+        }
+
+        // Fit the view to the dataset: world view spans all pins, Iran view
+        // keeps the original center/zoom.
+        if (sellers.length > 0) {
+          const coords = sellers.map((s) => [s.lat, s.lng] as [number, number]);
+          const anyWorld = sellers.some((s) => s.country && s.country !== "ایران");
+          if (anyWorld) {
+            try {
+              const L2 = (await import("leaflet")).default;
+              map.fitBounds(L2.latLngBounds(coords), { padding: [28, 28] });
+            } catch {
+              /* keep default view */
+            }
+          } else {
+            map.setView([34.8, 52.5], 6);
+          }
         }
 
         setIsLeafletReady(true);
@@ -176,7 +203,7 @@ export default function MultiMapViewer({ sellers, selected, onSelect }: MultiMap
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
-          {mapProviders.map((p) => {
+          {mapProviders.filter((p) => !(isWorld && p.id === "vector-svg")).map((p) => {
             const active = provider === p.id;
             return (
               <button

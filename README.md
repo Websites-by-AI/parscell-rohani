@@ -22,9 +22,8 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 
 ## Features
 
-- **🗺 Seller map** — interactive Leaflet map (OpenStreetMap / Google tiles / Carto dark & light / custom vector Iran map) with pins for the sellers, live filtering
-  (search, household/industrial, voltage class, production type, catalog only),
-  a sorted results table, and a "add to lead bank" workflow.
+- **🗺 Seller map** — interactive Leaflet map (OpenStreetMap / Google tiles / Carto dark & light / custom vector Iran map) with **۲۳ Iranian + ۱۰۰ international** (China-focused, with Chinese names 中文) sellers, an Iran/World scope toggle, country filter, live filtering (search, household/industrial, voltage class, production type, catalog only), P1–P3 lead-priority scoring, a sorted results table, and a "add to lead bank" workflow.
+- **📨 مرکز پیام‌رسانی (Messaging center)** — multi-channel panel inspired by the Clinic Signal workflow: Telegram is live (other channels marked "به‌زودی"), topic selector, message composer with **human-approval checkbox and Dry Run mode**, bot status, and a compliance checklist (no-contact list, opt-out, server-side keys).
 - **🤖 RAG آنالیز کاتالوگ** — semantic catalog analysis view: knowledge-source
   index (PDF catalogs, datasheets, site audits), featured specs, vector-chunk
   status and a query panel (demo data).
@@ -36,11 +35,12 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 
   | Route | Description |
   |---|---|
-  | `GET /api/sellers?q=&type=&city=&catalog=` | Search/filter the seller dataset (JSON) |
+  | `GET /api/sellers?q=&type=&city=&catalog=&scope=&country=&format=` | Search/filter the seller dataset (JSON or `format=csv`) — `scope=world` includes the 100 international sellers |
   | `GET /api/catalog` | Aggregated catalog as CSV (UTF-8 BOM, Excel-friendly) |
   | `GET /api/catalog/html` | Standalone, printable HTML version of the catalog |
   | `GET /api/health` | Health check (no database required) |
-  | `GET/POST /api/telegram` | Telegram messaging center (see below) |
+  | `GET/POST /api/telegram` | Telegram messaging center: status + send notifications (supports `dryRun`) |
+  | `GET/POST /api/telegram/webhook` | Telegram bot webhook — answers `/start /help /map /catalog /leads /rag /contact` |
 
 - **📨 Telegram integration** — the dashboard notifies the operator's Telegram
   chat through the [@Pars_sell_bot](https://t.me/Pars_sell_bot) bot:
@@ -61,7 +61,10 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 
 ## Telegram messaging center
 
-Notifications are delivered by the bot **[@Pars_sell_bot](https://t.me/Pars_sell_bot)**.
+Notifications are delivered by the bot **[@Pars_sell_bot](https://t.me/Pars_sell_bot)**
+with a full command menu (`/start /help /map /catalog /leads /rag /contact`) and a
+webhook at `/api/telegram/webhook` that answers each command with Persian text
+and inline buttons.
 
 Configuration (environment variables on the Cloudflare Pages project — never
 commit the real token):
@@ -70,6 +73,19 @@ commit the real token):
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) |
 | `TELEGRAM_CHAT_ID` | Chat that receives notifications (see below) |
+| `TELEGRAM_WEBHOOK_SECRET` | Random string used as `secret_token` in `setWebhook` |
+
+One-time setup commands (after the env vars are deployed):
+
+```bash
+# Command menu + description
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setMyCommands" -H 'Content-Type: application/json' \
+  -d '{"commands":[{"command":"start","description":"شروع و راهنمای سریع"},{"command":"help","description":"راهنمای کامل"},{"command":"map","description":"نقشه فروشندگان ایران و جهانی"},{"command":"catalog","description":"کاتالوگ محصولات"},{"command":"leads","description":"بانک لیدها"},{"command":"rag","description":"آنالیز RAG کاتالوگ"},{"command":"contact","description":"راه‌های ارتباط"}]}'
+
+# Register the webhook (secret must match TELEGRAM_WEBHOOK_SECRET)
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" -H 'Content-Type: application/json' \
+  -d '{"url":"https://parscell.exhibition2world.ir/api/telegram/webhook","secret_token":"<SECRET>"}'
+```
 
 To obtain `TELEGRAM_CHAT_ID`:
 
@@ -156,13 +172,16 @@ npm run pages:build    # runs npx @cloudflare/next-on-pages
 src/
 ├── app/
 │   ├── page.tsx              # Entry page
-│   ├── Dashboard.tsx         # Main UI (map / HTI / catalog views)
-│   ├── data.ts               # Static demo dataset
+│   ├── Dashboard.tsx         # Main UI (map / HTI / RAG / messaging / catalog views)
+│   ├── data.ts               # Static Iranian dataset (۲۳ sellers)
+│   ├── data-global.ts        # 100 international sellers (China-focused, 中文 names)
+│   ├── components/           # MultiMapViewer, RAGCatalogAnalyzer, MessagingView
 │   ├── globals.css           # Tailwind + base styles
 │   └── api/
 │       ├── health/route.ts   # Health check (edge, no DB)
-│       ├── sellers/route.ts  # Seller search/filter API (edge)
-│       └── catalog/          # CSV + standalone HTML catalog exports (edge)
+│       ├── sellers/route.ts  # Seller search/filter API + CSV (edge)
+│       ├── catalog/          # CSV + standalone HTML catalog exports (edge)
+│       └── telegram/         # Messaging center + bot webhook (edge)
 └── db/
     ├── index.ts              # Lazy Drizzle client (no DB required to boot)
     └── schema.ts             # PostgreSQL tables (sellers, catalog_models)

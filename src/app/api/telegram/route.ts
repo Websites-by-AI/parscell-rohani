@@ -9,9 +9,9 @@ export const runtime = "edge";
  * the Pars_sell_bot bot. Configuration comes from Cloudflare Pages
  * environment variables:
  *   - TELEGRAM_BOT_TOKEN  (set on the Pages project)
- *   - TELEGRAM_CHAT_ID    (the chat that receives notifications — the owner
- *                          must press /start on the bot once, then copy the
- *                          chat id from https://api.telegram.org/bot<TOKEN>/getUpdates)
+ *   - TELEGRAM_CHAT_ID    (the chat that receives notifications)
+ *
+ * Bot command menu + webhook: see /api/telegram/webhook.
  */
 
 const ALLOWED_TOPICS = ["lead_added", "proposal_ready", "test"] as const;
@@ -22,6 +22,14 @@ const TOPIC_LABELS: Record<Topic, string> = {
   proposal_ready: "📄 پروپوزال برای مرکز پیام‌رسانی آماده شد",
   test: "📬 پیام آزمایشی از داشبورد",
 };
+
+const CHANNELS = [
+  { id: "telegram", label: "تلگرام", status: "فعال" },
+  { id: "whatsapp", label: "واتساپ", status: "به‌زودی" },
+  { id: "email", label: "ایمیل", status: "به‌زودی" },
+  { id: "sms", label: "پیامک", status: "به‌زودی" },
+  { id: "iranian", label: "بله / روبیکا / ایتا", status: "به‌زودی" },
+];
 
 function clean(value: unknown, maxLength = 200): string {
   return String(value ?? "")
@@ -36,6 +44,9 @@ export async function GET() {
     ok: true,
     configured,
     bot: configured ? "Pars_sell_bot" : null,
+    chatId: process.env.TELEGRAM_CHAT_ID ?? null,
+    channels: CHANNELS,
+    webhook: "active",
   });
 }
 
@@ -67,8 +78,9 @@ export async function POST(request: NextRequest) {
     return Response.json({ ok: false, error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const payload = (body ?? {}) as { topic?: unknown; title?: unknown; details?: unknown };
+  const payload = (body ?? {}) as { topic?: unknown; title?: unknown; details?: unknown; dryRun?: unknown };
   const topic = clean(payload.topic, 40) as Topic;
+  const dryRun = payload.dryRun === true;
 
   if (!ALLOWED_TOPICS.includes(topic)) {
     return Response.json(
@@ -89,6 +101,10 @@ export async function POST(request: NextRequest) {
     "",
     "— BLDC Map Signal · MOTORLEAD OS",
   ].join("\n");
+
+  if (dryRun) {
+    return Response.json({ ok: true, dryRun: true, topic, preview: text });
+  }
 
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
