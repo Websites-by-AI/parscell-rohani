@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sellers } from "@/app/data";
 
+export const runtime = 'edge';
+
 export function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const query = (params.get("q") ?? "").trim().toLocaleLowerCase("fa");

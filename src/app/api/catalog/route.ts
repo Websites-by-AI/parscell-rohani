@@ -1,5 +1,7 @@
 import { catalogRows } from "@/app/data";
 
+export const runtime = 'edge';
+
 const escapeCsv = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
 export function GET() {

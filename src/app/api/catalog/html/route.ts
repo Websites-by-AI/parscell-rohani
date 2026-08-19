@@ -1,5 +1,7 @@
 import { catalogRows } from "@/app/data";
 
+export const runtime = 'edge';
+
 const instagramUrl = "https://www.instagram.com/yasinrou/";
 
 function escapeHtml(value: string) {
