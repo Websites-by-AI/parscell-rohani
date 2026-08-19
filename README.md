@@ -59,12 +59,40 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 | Database (optional) | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team) + `pg` |
 | Language | TypeScript, UI text in Persian (RTL) |
 
+- **👤 Role-based accounts (demo)** — phone+password login at `/login`, separate
+  dashboards per role (**admin** users table & stats, **seller** company
+  profile + pricing + inbound leads, **buyer/customer** saved leads with
+  prices and inquiry actions), demo role switcher to preview every user's
+  dashboard. Demo database seed in `src/data/accounts.ts`; production schema
+  in `db/d1-schema.sql` (Cloudflare D1: users, sellers, leads, messages,
+  telegram_users).
+- **💰 Cost analysis** — every seller has a sample price per watt, unit cost
+  estimate and bulk-saving % (heuristic demo pricing in `src/app/pricing.ts`),
+  shown in the map detail panel, results table, a **regional big-company
+  analysis** card, and the sellers API.
+
+## Demo accounts (password for all: `demo123`)
+
+| Role | Name | Phone | Dashboard |
+|---|---|---|---|
+| ادمین | مدیر سامانه | 09120000001 | users table, seller approvals, reports |
+| خریدار | رضا کریمی | 09121111111 | saved leads + prices, inquiries |
+| فروشنده | نیان موتور | 09123333333 | company profile, pricing, inbound leads |
+| فروشنده | توسعه حرکت HTI | 09124444444 | company profile, pricing, inbound leads |
+| مشتری | مهدی رضایی | 09125555555 | followed companies, sample orders |
+| مشتری | سارا احمدی | 09126666666 | followed companies, sample orders |
+
 ## Telegram messaging center
 
 Notifications are delivered by the bot **[@Pars_sell_bot](https://t.me/Pars_sell_bot)**
-with a full command menu (`/start /help /map /catalog /leads /rag /contact`) and a
-webhook at `/api/telegram/webhook` that answers each command with Persian text
-and inline buttons.
+with a full command menu (`/start /help /map /catalog /leads /rag /contact
+/register /users /clinic`) and a webhook at `/api/telegram/webhook` that
+answers each command with Persian text and inline buttons.
+
+**User registration by phone:** send `/register`, then send your phone number
+(any demo number from the table above, or a clinic demo number from `/clinic`).
+The bot matches it against the demo database and registers the chat — in
+production this maps to the `telegram_users` table in D1.
 
 Configuration (environment variables on the Cloudflare Pages project — never
 commit the real token):
