@@ -15,7 +15,9 @@ import MultiMapViewer from "./components/MultiMapViewer";
 import RAGCatalogAnalyzer from "./components/RAGCatalogAnalyzer";
 import MessagingView from "./components/MessagingView";
 import AccountView from "./components/AccountView";
+import ModuleHub from "./components/ModuleHub";
 import { priceInfo, tierLabel } from "./pricing";
+import { readSession, type Session } from "@/lib/session";
 
 type View = "map" | "hti" | "catalog" | "rag" | "messages" | "account";
 
@@ -70,6 +72,11 @@ export default function Dashboard() {
   const [toast, setToast] = useState("");
   const [showFilters, setShowFilters] = useState(true);
   const [mobileNav, setMobileNav] = useState(false);
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    setSession(readSession());
+  }, []);
 
   useEffect(() => {
     try {
@@ -132,6 +139,22 @@ export default function Dashboard() {
     setMobileNav(false);
   }
 
+  // Auth gate — every module requires login. While the session loads, show a
+  // minimal loader; logged-out visitors get the main page (module hub).
+  if (session === undefined) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-[#f4f6f8]" dir="rtl">
+        <div className="flex items-center gap-3 rounded-2xl border border-[#e1e5e7] bg-white px-6 py-4 shadow-sm">
+          <div className="grid size-10 place-items-center rounded-xl bg-[#153e35] text-white"><Radar size={20} className="animate-pulse"/></div>
+          <div className="text-xs font-black text-[#5e6873]">در حال بررسی نشست...</div>
+        </div>
+      </div>
+    );
+  }
+  if (!session) return <ModuleHub />;
+
+  const initials = (session.account.name ?? "U").slice(0, 2);
+
   return (
     <main className="min-h-screen bg-[#f4f6f8] text-[#182230]" dir="rtl">
       <aside className={`fixed inset-y-0 right-0 z-50 w-[260px] border-l border-[#e6e9ee] bg-white transition-transform lg:translate-x-0 ${mobileNav ? "translate-x-0" : "translate-x-full"}`}>
@@ -174,7 +197,7 @@ export default function Dashboard() {
             <div className="hidden items-center gap-2 rounded-full border border-[#dfe5e3] px-3 py-1.5 text-[10px] font-bold text-[#326252] md:flex"><span className="size-1.5 animate-pulse rounded-full bg-[#35a977]"/> API زنده متصل</div>
             <a href="https://t.me/Pars_sell_bot" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full border border-[#cfe3f1] bg-[#f2f9fd] px-3 py-1.5 text-[10px] font-black text-[#1e7ea8] transition hover:bg-[#e5f3fa]"><Send size={13}/> تلگرام</a>
             <button className="relative grid size-9 place-items-center rounded-full border border-[#e2e6e9] bg-white text-[#56616b]"><Bell size={17}/><span className="absolute left-1.5 top-1.5 size-1.5 rounded-full bg-[#e65b4f] ring-2 ring-white"/></button>
-            <button onClick={() => goTo("account")} className="flex items-center gap-2 rounded-full border border-[#e2e6e9] py-1 pl-2 pr-1" title="حساب کاربری"><span className="grid size-7 place-items-center rounded-full bg-[#dceae4] text-[10px] font-black text-[#1c5749]">AM</span><ChevronDown className="hidden sm:block" size={13}/></button>
+            <button onClick={() => goTo("account")} className="flex items-center gap-2 rounded-full border border-[#e2e6e9] py-1 pl-2 pr-1" title={session.account.name}><span className="grid size-7 place-items-center rounded-full bg-[#dceae4] text-[10px] font-black text-[#1c5749]">{initials}</span><ChevronDown className="hidden sm:block" size={13}/></button>
           </div>
         </header>
 
@@ -210,7 +233,7 @@ export default function Dashboard() {
           {view === "hti" && <HTIView onNotify={notify} onSendToTelegram={sendToTelegram}/>} 
           {view === "rag" && <RAGCatalogAnalyzer />}
           {view === "messages" && <MessagingView />}
-          {view === "account" && <AccountView />}
+          {view === "account" && <AccountView onSessionChange={setSession} />}
           {view === "catalog" && <CatalogView/>}
         </div>
       </div>

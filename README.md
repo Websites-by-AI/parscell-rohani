@@ -59,13 +59,16 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 | Database (optional) | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team) + `pg` |
 | Language | TypeScript, UI text in Persian (RTL) |
 
-- **👤 Role-based accounts (demo)** — phone+password login at `/login`, separate
-  dashboards per role (**admin** users table & stats, **seller** company
-  profile + pricing + inbound leads, **buyer/customer** saved leads with
-  prices and inquiry actions), demo role switcher to preview every user's
-  dashboard. Demo database seed in `src/data/accounts.ts`; production schema
-  in `db/d1-schema.sql` (Cloudflare D1: users, sellers, leads, messages,
-  telegram_users).
+- **👤 Role-based accounts (demo)** — **all modules require login**. Visitors see a
+  main page (module hub) with locked module cards; login at `/login` (phone +
+  password) and self-registration at `/register` (name, phone, company, city,
+  role: buyer/seller/customer). Separate dashboards per role (**admin** users
+  table & stats, **seller** company profile + pricing + inbound leads,
+  **buyer/customer** saved leads with prices and inquiry actions), demo role
+  switcher to preview every user's dashboard. Demo database seed in
+  `src/data/accounts.ts` + browser registry in `src/lib/session.ts`;
+  production schema in `db/d1-schema.sql` (Cloudflare D1: users, sellers,
+  leads, messages, telegram_users).
 - **💰 Cost analysis** — every seller has a sample price per watt, unit cost
   estimate and bulk-saving % (heuristic demo pricing in `src/app/pricing.ts`),
   shown in the map detail panel, results table, a **regional big-company

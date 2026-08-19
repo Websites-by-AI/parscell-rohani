@@ -9,8 +9,9 @@ import {
 import { sellers, type Seller } from "../data";
 import { priceInfo } from "../pricing";
 import { demoAccounts, roleLabels, type DemoAccount, type Role } from "../../data/accounts";
+import { getRegisteredUsers, login, logout, readSession, type Session } from "../../lib/session";
 
-type Session = { token: string; account: Omit<DemoAccount, "password"> };
+type SessionAccount = Omit<DemoAccount, "password">;
 
 const MODULES: Record<Role, { icon: typeof Users; title: string; desc: string }[]> = {
   admin: [
@@ -52,19 +53,6 @@ const INBOUND_LEADS = [
   { from: "ساختمان سبز شیراز", city: "شیراز", ask: "نمونه پمپ خورشیدی 400W", when: "۳ روز پیش" },
 ];
 
-function readSession(): Session | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem("bldc_session");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Session;
-    if (!parsed.token || !parsed.account) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
 function readLeadIds(): number[] {
   if (typeof window === "undefined") return [1, 7];
   try {
@@ -74,21 +62,27 @@ function readLeadIds(): number[] {
   return [1, 7];
 }
 
-export default function AccountView() {
+export default function AccountView({ onSessionChange }: { onSessionChange?: (s: Session | null) => void }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [users, setUsers] = useState<(Omit<DemoAccount, "password"> & { _pw?: string })[] | null>(null);
-  const [meta, setMeta] = useState<{ total: number; sellers: number } | null>(null);
   const [toast, setToast] = useState("");
   const [busyId, setBusyId] = useState("");
   const [leadIds, setLeadIds] = useState<number[]>([]);
 
+  const users = useMemo<SessionAccount[]>(
+    () => [...demoAccounts, ...getRegisteredUsers()].map((a) => {
+      const { password: _pw, ...rest } = a;
+      return rest;
+    }),
+    []
+  );
+  const meta = useMemo(
+    () => ({ total: users.length, sellers: users.filter((u) => u.role === "seller").length }),
+    [users]
+  );
+
   useEffect(() => {
     setSession(readSession());
     setLeadIds(readLeadIds());
-    fetch("/api/accounts")
-      .then((r) => r.json())
-      .then((d) => { setUsers(d.users ?? []); setMeta({ total: d.meta?.total ?? 0, sellers: d.meta?.sellers ?? 0 }); })
-      .catch(() => { /* demo — ignore */ });
   }, []);
 
   const mySellers = useMemo(
@@ -109,15 +103,10 @@ export default function AccountView() {
   async function switchRole(account: DemoAccount) {
     setBusyId(account.id);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: account.phone, password: account.password }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; token?: string; account?: Omit<DemoAccount, "password"> };
-      if (!res.ok || !data.ok) throw new Error("خطا");
-      window.localStorage.setItem("bldc_session", JSON.stringify({ token: data.token, account: data.account }));
-      setSession({ token: data.token!, account: data.account! });
+      const result = login(account.phone, account.password);
+      if ("error" in result) throw new Error(result.error);
+      setSession(result.session);
+      onSessionChange?.(result.session);
       flash(`نقش به «${roleLabels[account.role]}» تغییر کرد`);
     } catch {
       flash("تغییر نقش ناموفق بود");
@@ -126,9 +115,10 @@ export default function AccountView() {
     }
   }
 
-  function logout() {
-    window.localStorage.removeItem("bldc_session");
+  function doLogout() {
+    logout();
     setSession(null);
+    onSessionChange?.(null);
     flash("از حساب خارج شدید");
   }
 
@@ -160,7 +150,7 @@ export default function AccountView() {
         </div>
         <div className="md:mr-auto flex items-center gap-2">
           <span className="rounded-lg bg-[#f2f4f4] px-2.5 py-1.5 text-[9px] font-bold text-[#7c868d]">دمو — بدون رمز واقعی</span>
-          <button onClick={logout} className="inline-flex items-center gap-1.5 rounded-xl border border-[#e3e7e6] px-3 py-2 text-[10px] font-bold text-[#9a625b]"><LogOut size={14}/> خروج</button>
+          <button onClick={doLogout} className="inline-flex items-center gap-1.5 rounded-xl border border-[#e3e7e6] px-3 py-2 text-[10px] font-bold text-[#9a625b]"><LogOut size={14}/> خروج</button>
         </div>
       </section>
 
@@ -189,7 +179,7 @@ export default function AccountView() {
             <table className="w-full min-w-[720px] text-right text-[11px]">
               <thead className="bg-[#fafbfb] text-[9px] font-bold text-[#90999f]"><tr><th className="px-5 py-3">نام</th><th>نقش</th><th>موبایل</th><th>شرکت</th><th>شهر</th><th>وضعیت</th></tr></thead>
               <tbody>
-                {(users ?? []).map((u) => (
+                {(users).map((u) => (
                   <tr key={u.id} className="border-t border-[#edf0f2] hover:bg-[#f8faf9]">
                     <td className="px-5 py-3 font-black text-[#27343d]">{u.name}</td>
                     <td><span className={`rounded-md px-2 py-1 font-black ${ROLE_COLORS[u.role]}`}>{roleLabels[u.role]}</span></td>

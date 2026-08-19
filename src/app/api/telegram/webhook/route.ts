@@ -102,12 +102,17 @@ export async function POST(request: NextRequest) {
       "📱 <b>ثبت‌نام با شماره موبایل</b>",
       "",
       "شماره موبایل خود را ارسال کنید (مثال: 09121111111)",
+      "یا از طریق سایت ثبت‌نام کنید: /register 👇",
       "",
       "حساب‌های دموی سامانه:",
       ...demoAccounts.map((a) => `• ${a.name} — <code>${a.phone}</code> (${roleLabels[a.role]})`),
       "",
       "رمز همه حساب‌های دمو: demo123",
     ].join("\n");
+    replyMarkup = keyboard([
+      [{ label: "ثبت‌نام در سایت", url: `${SITE_URL}/register` }],
+      [{ label: "ورود به داشبورد", url: `${SITE_URL}/login` }],
+    ]);
   } else if (phone) {
     const account = findByPhone(phone);
     if (account) {
