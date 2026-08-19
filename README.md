@@ -22,9 +22,12 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 
 ## Features
 
-- **🗺 Seller map** — SVG map of Iran with pins for 12 sellers, live filtering
+- **🗺 Seller map** — interactive Leaflet map (OpenStreetMap / Google tiles / Carto dark & light / custom vector Iran map) with pins for the sellers, live filtering
   (search, household/industrial, voltage class, production type, catalog only),
   a sorted results table, and a "add to lead bank" workflow.
+- **🤖 RAG آنالیز کاتالوگ** — semantic catalog analysis view: knowledge-source
+  index (PDF catalogs, datasheets, site audits), featured specs, vector-chunk
+  status and a query panel (demo data).
 - **⚡ HTI Snap Model** — one-page industrial snapshot: audit signals, AI proposal
   package, KPI suggestions and a 30/60/90-day advisory plan (print-friendly).
 - **📄 Catalog view** — aggregated BLDC motor specs for household and industrial
@@ -51,6 +54,7 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 | Framework | [Next.js](https://nextjs.org) **15.5.2** (App Router) + React 19 |
 | Styling | [Tailwind CSS](https://tailwindcss.com) 4 |
 | Icons | [lucide-react](https://lucide.dev) |
+| Maps | [Leaflet](https://leafletjs.com) with multi-provider tiles |
 | Hosting | [Cloudflare Pages](https://pages.cloudflare.com) via [`@cloudflare/next-on-pages`](https://github.com/cloudflare/next-on-pages) |
 | Database (optional) | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team) + `pg` |
 | Language | TypeScript, UI text in Persian (RTL) |
