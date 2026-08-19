@@ -10,8 +10,10 @@ import {
   SlidersHorizontal, Sparkles, Target, Upload, Users, X, Zap,
 } from "lucide-react";
 import { catalogRows, sellers, type Seller, type SellerType } from "./data";
+import MultiMapViewer from "./components/MultiMapViewer";
+import RAGCatalogAnalyzer from "./components/RAGCatalogAnalyzer";
 
-type View = "map" | "hti" | "catalog";
+type View = "map" | "hti" | "catalog" | "rag";
 
 type NavItem = { label: string; icon: typeof Home; view?: View; badge?: string };
 
@@ -24,6 +26,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   ]},
   { label: "هوشمندی و خروجی", items: [
     { label: "HTI Snap Model", icon: Zap, view: "hti", badge: "AI" },
+    { label: "RAG آنالیز کاتالوگ", icon: Sparkles, view: "rag", badge: "RAG" },
     { label: "ممیزی فنی", icon: ClipboardCheck },
     { label: "تولید کاتالوگ", icon: FileText, view: "catalog" },
     { label: "مرکز پیام‌رسانی", icon: Send },
@@ -106,7 +109,7 @@ export default function Dashboard() {
       <div className="lg:mr-[260px]">
         <header className="sticky top-0 z-30 flex h-[72px] items-center border-b border-[#e4e8eb] bg-white/95 px-4 backdrop-blur md:px-7">
           <button className="ml-3 rounded-lg p-2 lg:hidden" onClick={() => setMobileNav(true)} aria-label="باز کردن منو"><Menu size={22}/></button>
-          <div className="hidden items-center gap-2 text-xs text-[#91999f] sm:flex"><span>BLDC Map Signal</span><ChevronLeft size={14}/><strong className="text-[#38434e]">{view === "map" ? "نقشه فروشندگان" : view === "hti" ? "HTI Snap Model" : "کاتالوگ نهایی"}</strong></div>
+          <div className="hidden items-center gap-2 text-xs text-[#91999f] sm:flex"><span>BLDC Map Signal</span><ChevronLeft size={14}/><strong className="text-[#38434e]">{view === "map" ? "نقشه فروشندگان" : view === "hti" ? "HTI Snap Model" : view === "rag" ? "RAG آنالیز کاتالوگ" : "کاتالوگ نهایی"}</strong></div>
           <div className="mr-auto flex items-center gap-2.5">
             <div className="hidden items-center gap-2 rounded-full border border-[#dfe5e3] px-3 py-1.5 text-[10px] font-bold text-[#326252] md:flex"><span className="size-1.5 animate-pulse rounded-full bg-[#35a977]"/> API زنده متصل</div>
             <button className="relative grid size-9 place-items-center rounded-full border border-[#e2e6e9] bg-white text-[#56616b]"><Bell size={17}/><span className="absolute left-1.5 top-1.5 size-1.5 rounded-full bg-[#e65b4f] ring-2 ring-white"/></button>
@@ -118,12 +121,13 @@ export default function Dashboard() {
           <div className="mb-6 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
             <div>
               <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold text-[#23816a]"><span className="h-px w-6 bg-[#23816a]"/> مرکز عملیات بازار ایران</div>
-              <h1 className="text-[26px] font-black tracking-[-.02em] text-[#14211e] md:text-[32px]">{view === "map" ? "یابنده فروشنده BLDC" : view === "hti" ? "مدل Snapshot صنعتی HTI" : "کاتالوگ نهایی محصولات"}</h1>
-              <p className="mt-1.5 max-w-2xl text-xs leading-6 text-[#78828b]">{view === "map" ? "فروشنده، مونتاژکننده و سازنده را روی نقشه پیدا و برای ارزیابی انسانی آماده کنید." : view === "hti" ? "نمای یک‌صفحه‌ای اطلاعات عمومی، سیگنال‌های فنی و پیشنهاد اقدام بعدی." : "تجمیع مشخصات عمومی از پین‌های بازبینی‌شده؛ پیش از خرید با فروشنده تأیید شود."}</p>
+              <h1 className="text-[26px] font-black tracking-[-.02em] text-[#14211e] md:text-[32px]">{view === "map" ? "یابنده فروشنده BLDC" : view === "hti" ? "مدل Snapshot صنعتی HTI" : view === "rag" ? "RAG آنالیز کاتالوگ (Nian Motor)" : "کاتالوگ نهایی محصولات"}</h1>
+              <p className="mt-1.5 max-w-2xl text-xs leading-6 text-[#78828b]">{view === "map" ? "فروشنده، مونتاژکننده و سازنده را روی نقشه پیدا و برای ارزیابی انسانی آماده کنید." : view === "hti" ? "نمای یک‌صفحه‌ای اطلاعات عمومی، سیگنال‌های فنی و پیشنهاد اقدام بعدی." : view === "rag" ? "آنالیز هوشمند مشخصات فنی کاتالوگ‌های PDF (نیان موتور و HTI) با پردازش چانک‌های سمانتیک." : "تجمیع مشخصات عمومی از پین‌های بازبینی‌شده؛ پیش از خرید با فروشنده تأیید شود."}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {view === "map" && <><a href="/api/catalog" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><Download size={16}/> خروجی CSV</a><button onClick={() => notify("حالت افزودن پین فعال شد — یک موقعیت روی نقشه انتخاب کنید")} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(24,63,54,.2)]"><Plus size={17}/> افزودن لید یا پین</button></>}
               {view === "hti" && <><button onClick={() => notify("پیشنهاد برای مرکز پیام‌رسانی آماده شد")} className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold"><MessageSquareText size={16}/> ارسال به پیام‌رسانی</button><button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white"><FileDown size={16}/> تولید Proposal PDF</button></>}
+              {view === "rag" && <><a href="https://nianmotor.ir/wp-content/uploads/2025/08/Nian-Motor-Catalog.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><ExternalLink size={16}/> لینک Nian Motor Catalog</a><button onClick={() => notify("پایگاه دانش RAG به‌روزرسانی شد")} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(24,63,54,.2)]"><Sparkles size={16}/> به‌روزرسانی Vector Index</button></>}
               {view === "catalog" && <><button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold"><FileDown size={16}/> نسخه PDF</button><a href="/api/catalog/html" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b]"><Code2 size={16}/> دانلود HTML</a><a href="/api/catalog" className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white"><Download size={16}/> دانلود CSV</a></>}
             </div>
           </div>
@@ -142,6 +146,7 @@ export default function Dashboard() {
             showFilters={showFilters} setShowFilters={setShowFilters} goTo={goTo}
           />}
           {view === "hti" && <HTIView onNotify={notify}/>} 
+          {view === "rag" && <RAGCatalogAnalyzer />}
           {view === "catalog" && <CatalogView/>}
         </div>
       </div>
@@ -181,13 +186,8 @@ function MapView(props: {
     </section>
 
     <div className="grid min-h-[590px] gap-4 xl:grid-cols-[minmax(0,1fr)_355px]">
-      <section className="relative min-h-[520px] overflow-hidden rounded-2xl border border-[#dce2e1] bg-[#dfe8e4] shadow-sm">
-        <IranMap sellers={filtered} selected={selected} onSelect={setSelected}/>
-        <div className="absolute right-4 top-4 flex items-center gap-2 rounded-xl border border-white/70 bg-white/90 px-3 py-2 text-[10px] font-bold text-[#53615d] shadow-lg backdrop-blur"><Layers3 size={15}/><span>{filtered.length} نتیجه روی نقشه</span></div>
-        <div className="absolute bottom-4 right-4 rounded-xl border border-white/60 bg-white/92 p-3 text-[10px] shadow-lg backdrop-blur">
-          <div className="mb-2 font-black text-[#33423e]">راهنمای نقشه</div><div className="flex gap-4"><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-[#3975a7]"/> خانگی</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-[#d75b4e]"/> صنعتی</span><span className="flex items-center gap-1.5"><i className="size-2.5 rounded-full bg-[#8067a8]"/> هر دو</span></div>
-        </div>
-        <div className="absolute left-4 top-4 flex flex-col overflow-hidden rounded-lg border border-[#d9dfdd] bg-white shadow-lg"><button className="grid size-9 place-items-center border-b border-[#edf0ef] text-lg font-medium">+</button><button className="grid size-9 place-items-center text-xl font-medium">−</button></div>
+      <section className="relative min-h-[520px] overflow-hidden rounded-2xl border border-[#dce2e1] bg-[#1a232e] shadow-sm">
+        <MultiMapViewer sellers={filtered} selected={selected} onSelect={setSelected}/>
       </section>
 
       <aside className="overflow-hidden rounded-2xl border border-[#e1e5e7] bg-white shadow-sm">

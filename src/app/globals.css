@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   color-scheme: light;
@@ -24,8 +25,64 @@ button { cursor: pointer; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cfd6d4; border-radius: 999px; }
 
+/* Custom Leaflet Map styling */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background: #212c37 !important;
+  font-family: Tahoma, Arial, sans-serif !important;
+}
+
+.custom-bldc-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-marker-pin {
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  transition: all 0.2s ease-in-out;
+  border: 2px solid #ffffff;
+}
+
+.custom-marker-pin.active {
+  transform: rotate(-45deg) scale(1.3);
+  z-index: 999 !important;
+  box-shadow: 0 0 20px rgba(45, 212, 191, 0.8), 0 6px 16px rgba(0,0,0,0.5);
+  border: 2.5px solid #ffffff;
+}
+
+.custom-marker-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  transform: rotate(45deg);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 14px !important;
+  padding: 4px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25) !important;
+  direction: rtl;
+  text-align: right;
+  font-family: Tahoma, Arial, sans-serif !important;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
 @media print {
-  header, aside, button, a[href="/api/catalog"] { display: none !important; }
+  header, aside, button, a[href="/api/catalog"], a[href="/api/catalog/html"] { display: none !important; }
   body, main { background: white !important; }
   .lg\:mr-\[260px\] { margin-right: 0 !important; }
   section { box-shadow: none !important; break-inside: avoid; }

@@ -77,6 +77,16 @@ export function GET() {
       <a class="ig-link" href="${instagramUrl}" target="_blank" rel="noopener noreferrer">instagram.com/yasinrou ↗</a>
     </section>
 
+    <section class="section card" style="padding:22px;background:#f0f7f4;border-color:#c8dfd8">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:#173f35">منبع آنالیز RAG: کاتالوگ نیان موتور (Nian Motor)</h3>
+          <p style="margin:4px 0 0;font-size:11px;color:#4c625a">شامل مشخصات موتورهای BLDC اینورتردار کولری، تهویه و درایوهای FOC بومی</p>
+        </div>
+        <a href="https://nianmotor.ir/wp-content/uploads/2025/08/Nian-Motor-Catalog.pdf" target="_blank" rel="noopener noreferrer" style="background:#173f35;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;font-size:11px;font-weight:bold">دانلود فایل اصلی PDF نیان موتور ↗</a>
+      </div>
+    </section>
+
     <section class="section card table-card" id="products">
       <div class="section-head" style="padding:20px 20px 8px"><div><h2>جدول مشخصات محصولات</h2><p>آخرین نسخه تجمیع‌شده از منابع عمومی</p></div><code>${catalogRows.length} MODELS</code></div>
       <div class="table-wrap"><table><thead><tr><th>مدل</th><th>توان</th><th>ولتاژ</th><th>RPM</th><th>گشتاور</th><th>کاربرد</th><th>استفاده متداول</th><th>منبع عمومی</th><th>یادداشت</th></tr></thead><tbody>${rows}</tbody></table></div>

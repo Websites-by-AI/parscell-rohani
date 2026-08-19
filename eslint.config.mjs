@@ -1,9 +1,8 @@
-import { FlatCompat } from "@eslint/eslintrc";
 import { defineConfig, globalIgnores } from "eslint/config";
-
-const compat = new FlatCompat({ baseDirectory: import.meta.dirname });
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 
 export default defineConfig([
-  ...compat.extends("next/core-web-vitals"),
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".vercel/**"]),
+  // Keep the starter on the flat config export that actually runs under the pinned ESLint/Next toolchain.
+  ...nextCoreWebVitals,
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
 ]);
