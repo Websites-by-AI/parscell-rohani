@@ -37,6 +37,12 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
   | `GET /api/catalog` | Aggregated catalog as CSV (UTF-8 BOM, Excel-friendly) |
   | `GET /api/catalog/html` | Standalone, printable HTML version of the catalog |
   | `GET /api/health` | Health check (no database required) |
+  | `GET/POST /api/telegram` | Telegram messaging center (see below) |
+
+- **📨 Telegram integration** — the dashboard notifies the operator's Telegram
+  chat through the [@Pars_sell_bot](https://t.me/Pars_sell_bot) bot:
+  adding a lead to the lead bank and pressing the HTI "send to messaging"
+  buttons push a formatted message to Telegram.
 
 ## Tech stack
 
@@ -48,6 +54,29 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 | Hosting | [Cloudflare Pages](https://pages.cloudflare.com) via [`@cloudflare/next-on-pages`](https://github.com/cloudflare/next-on-pages) |
 | Database (optional) | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team) + `pg` |
 | Language | TypeScript, UI text in Persian (RTL) |
+
+## Telegram messaging center
+
+Notifications are delivered by the bot **[@Pars_sell_bot](https://t.me/Pars_sell_bot)**.
+
+Configuration (environment variables on the Cloudflare Pages project — never
+commit the real token):
+
+| Variable | Purpose |
+|---|---|
+| `TELEGRAM_BOT_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_CHAT_ID` | Chat that receives notifications (see below) |
+
+To obtain `TELEGRAM_CHAT_ID`:
+
+1. Open <https://t.me/Pars_sell_bot> and press **START** once.
+2. Visit `https://api.telegram.org/bot<TOKEN>/getUpdates` and copy the `id`
+   inside the `chat` object.
+3. Set it on the Pages project (dashboard → Settings → Environment variables)
+   or pass it during setup.
+
+Until `TELEGRAM_CHAT_ID` is set, `/api/telegram` responds `503` with a
+helpful hint and the dashboard shows a toast when a send fails.
 
 ## Getting started
 

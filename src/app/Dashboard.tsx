@@ -59,9 +59,29 @@ export default function Dashboard() {
     window.setTimeout(() => setToast(""), 2600);
   }
 
+  async function sendToTelegram(payload: { topic: string; title: string; details: string[] }) {
+    try {
+      const res = await fetch("/api/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "خطای ناشناخته");
+      notify("به تلگرام ارسال شد 📨");
+    } catch (error) {
+      notify(`ارسال تلگرام ناموفق بود: ${error instanceof Error ? error.message : "خطا"}`);
+    }
+  }
+
   function addLead(seller: Seller) {
     if (!leadIds.includes(seller.id)) setLeadIds((ids) => [...ids, seller.id]);
     notify(`${seller.name} به بانک لیدها افزوده شد`);
+    void sendToTelegram({
+      topic: "lead_added",
+      title: `${seller.name} — ${seller.city}`,
+      details: [seller.zone, `محصول اصلی: ${seller.products[0] ?? "—"}`, `امتیاز: ${seller.score}/100`],
+    });
   }
 
   function goTo(next: View) {
@@ -109,6 +129,7 @@ export default function Dashboard() {
           <div className="hidden items-center gap-2 text-xs text-[#91999f] sm:flex"><span>BLDC Map Signal</span><ChevronLeft size={14}/><strong className="text-[#38434e]">{view === "map" ? "نقشه فروشندگان" : view === "hti" ? "HTI Snap Model" : "کاتالوگ نهایی"}</strong></div>
           <div className="mr-auto flex items-center gap-2.5">
             <div className="hidden items-center gap-2 rounded-full border border-[#dfe5e3] px-3 py-1.5 text-[10px] font-bold text-[#326252] md:flex"><span className="size-1.5 animate-pulse rounded-full bg-[#35a977]"/> API زنده متصل</div>
+            <a href="https://t.me/Pars_sell_bot" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full border border-[#cfe3f1] bg-[#f2f9fd] px-3 py-1.5 text-[10px] font-black text-[#1e7ea8] transition hover:bg-[#e5f3fa]"><Send size={13}/> تلگرام</a>
             <button className="relative grid size-9 place-items-center rounded-full border border-[#e2e6e9] bg-white text-[#56616b]"><Bell size={17}/><span className="absolute left-1.5 top-1.5 size-1.5 rounded-full bg-[#e65b4f] ring-2 ring-white"/></button>
             <button className="flex items-center gap-2 rounded-full border border-[#e2e6e9] py-1 pl-2 pr-1"><span className="grid size-7 place-items-center rounded-full bg-[#dceae4] text-[10px] font-black text-[#1c5749]">AM</span><ChevronDown className="hidden sm:block" size={13}/></button>
           </div>
@@ -123,7 +144,7 @@ export default function Dashboard() {
             </div>
             <div className="flex flex-wrap gap-2">
               {view === "map" && <><a href="/api/catalog" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b] shadow-sm"><Download size={16}/> خروجی CSV</a><button onClick={() => notify("حالت افزودن پین فعال شد — یک موقعیت روی نقشه انتخاب کنید")} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(24,63,54,.2)]"><Plus size={17}/> افزودن لید یا پین</button></>}
-              {view === "hti" && <><button onClick={() => notify("پیشنهاد برای مرکز پیام‌رسانی آماده شد")} className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold"><MessageSquareText size={16}/> ارسال به پیام‌رسانی</button><button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white"><FileDown size={16}/> تولید Proposal PDF</button></>}
+              {view === "hti" && <><button onClick={() => void sendToTelegram({ topic: "proposal_ready", title: "Industrial Custom + Technical Recovery — HTI", details: ["بازسازی دیتاشیت‌های کاربردمحور", "تفکیک صفحات محصول بر اساس صنعت", "بسته اثبات فنی و پروژه‌های مرجع", "قیف درخواست نمونه و استعلام مهندسی"] })} className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold"><MessageSquareText size={16}/> ارسال به پیام‌رسانی</button><button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white"><FileDown size={16}/> تولید Proposal PDF</button></>}
               {view === "catalog" && <><button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold"><FileDown size={16}/> نسخه PDF</button><a href="/api/catalog/html" className="inline-flex items-center gap-2 rounded-xl border border-[#dce1e4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#42505b]"><Code2 size={16}/> دانلود HTML</a><a href="/api/catalog" className="inline-flex items-center gap-2 rounded-xl bg-[#183f36] px-4 py-2.5 text-xs font-extrabold text-white"><Download size={16}/> دانلود CSV</a></>}
             </div>
           </div>
@@ -141,7 +162,7 @@ export default function Dashboard() {
             catalogOnly={catalogOnly} setCatalogOnly={setCatalogOnly} production={production} setProduction={setProduction}
             showFilters={showFilters} setShowFilters={setShowFilters} goTo={goTo}
           />}
-          {view === "hti" && <HTIView onNotify={notify}/>} 
+          {view === "hti" && <HTIView onNotify={notify} onSendToTelegram={sendToTelegram}/>} 
           {view === "catalog" && <CatalogView/>}
         </div>
       </div>
@@ -241,7 +262,7 @@ function IranMap({ sellers: data, selected, onSelect }: { sellers: Seller[]; sel
   </div>;
 }
 
-function HTIView({ onNotify }: { onNotify:(s:string)=>void }) {
+function HTIView({ onNotify, onSendToTelegram }: { onNotify:(s:string)=>void; onSendToTelegram:(p:{topic:string;title:string;details:string[]})=>void }) {
   const signals = [{l:"شفافیت مشخصات فنی",v:94},{l:"کاتالوگ و دیتاشیت",v:88},{l:"شواهد پروژه‌های صنعتی",v:76},{l:"اعتماد و استانداردها",v:82}];
   return <div className="space-y-4">
     <section className="relative overflow-hidden rounded-2xl bg-[#153e35] p-6 text-white shadow-[0_18px_40px_rgba(21,62,53,.16)] md:p-8">
@@ -254,7 +275,7 @@ function HTIView({ onNotify }: { onNotify:(s:string)=>void }) {
         <section className="rounded-2xl border border-[#e1e5e7] bg-white p-5"><Title icon={Activity} title="خلاصه ممیزی زنده" tag="آخرین اجرا: ۲ ساعت پیش"/><div className="mt-5 space-y-4">{signals.map(s => <div key={s.l}><div className="mb-1.5 flex justify-between text-[10px]"><span className="font-bold text-[#53605c]">{s.l}</span><span className="font-black text-[#1d6854]">{s.v}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-[#edf0ef]"><div style={{width:`${s.v}%`}} className="h-full rounded-full bg-[#3e9077]"/></div></div>)}</div><button onClick={() => onNotify("ممیزی جدید در صف بررسی قرار گرفت")} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-[#dce4e1] py-2.5 text-[11px] font-black text-[#276754]"><Radar size={15}/> اجرای ممیزی مجدد</button></section>
       </div>
       <div className="space-y-4">
-        <section className="rounded-2xl border border-[#dce5e1] bg-[#f7faf8] p-5"><Title icon={Sparkles} title="پکیج پیشنهادی" tag="پیشنهاد AI · مشورتی"/><div className="mt-5 rounded-xl border border-[#cddfd8] bg-white p-4"><div className="flex items-start justify-between"><div><div className="text-[9px] font-bold text-[#2b7b65]">بهترین تطبیق</div><h3 className="mt-1 text-base font-black">Industrial Custom + Technical Recovery</h3></div><span className="rounded-lg bg-[#e9f4ef] p-2 text-[#2a745f]"><PackageCheck size={18}/></span></div><ul className="mt-4 space-y-2 text-[10px] text-[#5f6b67]">{["بازسازی دیتاشیت‌های کاربردمحور", "تفکیک صفحات محصول بر اساس صنعت", "بسته اثبات فنی و پروژه‌های مرجع", "قیف درخواست نمونه و استعلام مهندسی"].map(x=><li className="flex items-center gap-2" key={x}><Check size={13} className="text-[#2f866d]"/>{x}</li>)}</ul></div><div className="mt-4 flex gap-2"><button onClick={() => onNotify("درخواست کاتالوگ برای تأیید انسانی آماده شد")} className="flex-1 rounded-xl bg-[#173f35] py-3 text-[11px] font-black text-white">آماده‌سازی درخواست رسمی</button><button className="grid size-10 place-items-center rounded-xl border border-[#dce3e0] bg-white"><Upload size={16}/></button></div></section>
+        <section className="rounded-2xl border border-[#dce5e1] bg-[#f7faf8] p-5"><Title icon={Sparkles} title="پکیج پیشنهادی" tag="پیشنهاد AI · مشورتی"/><div className="mt-5 rounded-xl border border-[#cddfd8] bg-white p-4"><div className="flex items-start justify-between"><div><div className="text-[9px] font-bold text-[#2b7b65]">بهترین تطبیق</div><h3 className="mt-1 text-base font-black">Industrial Custom + Technical Recovery</h3></div><span className="rounded-lg bg-[#e9f4ef] p-2 text-[#2a745f]"><PackageCheck size={18}/></span></div><ul className="mt-4 space-y-2 text-[10px] text-[#5f6b67]">{["بازسازی دیتاشیت‌های کاربردمحور", "تفکیک صفحات محصول بر اساس صنعت", "بسته اثبات فنی و پروژه‌های مرجع", "قیف درخواست نمونه و استعلام مهندسی"].map(x=><li className="flex items-center gap-2" key={x}><Check size={13} className="text-[#2f866d]"/>{x}</li>)}</ul></div><div className="mt-4 flex gap-2"><button onClick={() => void onSendToTelegram({ topic: "proposal_ready", title: "Industrial Custom + Technical Recovery", details: ["پکیج پیشنهادی AI", "آماده‌سازی درخواست رسمی کاتالوگ"] })} className="flex-1 rounded-xl bg-[#173f35] py-3 text-[11px] font-black text-white">آماده‌سازی درخواست رسمی</button><button className="grid size-10 place-items-center rounded-xl border border-[#dce3e0] bg-white"><Upload size={16}/></button></div></section>
         <section className="rounded-2xl border border-[#e1e5e7] bg-white p-5"><Title icon={BarChart3} title="پیشنهاد KPI"/><div className="mt-4 grid grid-cols-3 gap-2"><Mini label="پاسخ فنی" value="< 24h" strong/><Mini label="نرخ استعلام" value="+18%" strong/><Mini label="تکمیل دیتاشیت" value="95%" strong/></div></section>
       </div>
     </div>
@@ -268,6 +289,7 @@ function Plan({day,title,items}:{day:string;title:string;items:string[]}) { retu
 
 function CatalogView() {
   const instagramUrl = "https://www.instagram.com/yasinrou/";
+  const telegramUrl = "https://t.me/Pars_sell_bot";
 
   return <div className="space-y-4">
     <section className="relative overflow-hidden rounded-3xl bg-[#153e35] p-6 text-white shadow-[0_18px_45px_rgba(21,62,53,.16)] md:p-8">
@@ -287,10 +309,11 @@ function CatalogView() {
         <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#833ab4] via-[#e1306c] to-[#f77737] text-white shadow-[0_8px_20px_rgba(225,48,108,.22)]"><AtSign size={23}/></div>
         <div className="flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-sm font-black">صفحه ارتباط و کاتالوگ HTI</h3><span className="rounded-full bg-[#edf6f2] px-2 py-1 text-[8px] font-black text-[#26715c]">لینک اعلام‌شده</span></div><p className="mt-1 text-[10px] leading-5 text-[#7c858d]">برای معرفی محصولات، ارتباط نمایشگاهی و پیگیری نسخه‌های کاتالوگ از پروفایل عمومی زیر استفاده کنید.</p><div className="mt-2 text-xs font-black text-[#ba315f]" dir="ltr">@yasinrou</div></div>
         <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d9346f] px-4 py-3 text-[11px] font-black text-white shadow-[0_8px_18px_rgba(217,52,111,.18)]"><ExternalLink size={15}/> باز کردن Instagram</a>
+        <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1f94c9] px-4 py-3 text-[11px] font-black text-white shadow-[0_8px_18px_rgba(31,148,201,.18)]"><Send size={15}/> تلگرام</a>
       </div>
     </section>
 
-    <section className="overflow-hidden rounded-2xl border border-[#e1e5e7] bg-white shadow-sm"><div className="flex items-center justify-between border-b border-[#e7eaec] px-5 py-4"><div><h3 className="text-sm font-black">جدول مشخصات تجمیع‌شده</h3><p className="mt-1 text-[9px] text-[#929aa1]">Public information only — verify with seller</p></div><ListFilter size={18} className="text-[#68747c]"/></div><div className="overflow-x-auto"><table className="w-full min-w-[1000px] text-right text-[10px]"><thead className="bg-[#f8faf9] text-[9px] text-[#818c92]"><tr>{["مدل","توان","ولتاژ","محدوده RPM","گشتاور","کاربرد","استفاده متداول","منبع عمومی","یادداشت"].map(h=><th className="px-4 py-3 font-bold" key={h}>{h}</th>)}</tr></thead><tbody>{catalogRows.map((r)=><tr className="border-t border-[#ebeeef] hover:bg-[#fafcfb]" key={r.model}><td className="px-4 py-4 font-black text-[#24343c]">{r.model}</td><td>{r.power}</td><td>{r.voltage}</td><td>{r.rpm}</td><td>{r.torque}</td><td><span className={`rounded-md px-2 py-1 font-bold ${r.app === "صنعتی" ? "bg-[#f9eae8] text-[#a7473f]" : "bg-[#e8f1f8] text-[#326b99]"}`}>{r.app}</span></td><td>{r.use}</td><td className="font-bold text-[#316e5c]">{r.source}</td><td className="text-[#7f898f]">{r.notes}</td></tr>)}</tbody></table></div><div className="flex flex-col gap-2 border-t border-[#e7eaec] bg-[#fafbfb] px-5 py-3 text-[9px] text-[#899299] sm:flex-row sm:items-center"><span className="flex items-center gap-2"><ShieldCheck size={14} className="text-[#2f7863]"/> مشخصات قبل از سفارش باید با کاتالوگ رسمی و فروشنده تطبیق داده شوند.</span><a className="sm:mr-auto font-bold text-[#bd3564]" href={instagramUrl} target="_blank" rel="noopener noreferrer" dir="ltr">Instagram: @yasinrou</a></div></section>
+    <section className="overflow-hidden rounded-2xl border border-[#e1e5e7] bg-white shadow-sm"><div className="flex items-center justify-between border-b border-[#e7eaec] px-5 py-4"><div><h3 className="text-sm font-black">جدول مشخصات تجمیع‌شده</h3><p className="mt-1 text-[9px] text-[#929aa1]">Public information only — verify with seller</p></div><ListFilter size={18} className="text-[#68747c]"/></div><div className="overflow-x-auto"><table className="w-full min-w-[1000px] text-right text-[10px]"><thead className="bg-[#f8faf9] text-[9px] text-[#818c92]"><tr>{["مدل","توان","ولتاژ","محدوده RPM","گشتاور","کاربرد","استفاده متداول","منبع عمومی","یادداشت"].map(h=><th className="px-4 py-3 font-bold" key={h}>{h}</th>)}</tr></thead><tbody>{catalogRows.map((r)=><tr className="border-t border-[#ebeeef] hover:bg-[#fafcfb]" key={r.model}><td className="px-4 py-4 font-black text-[#24343c]">{r.model}</td><td>{r.power}</td><td>{r.voltage}</td><td>{r.rpm}</td><td>{r.torque}</td><td><span className={`rounded-md px-2 py-1 font-bold ${r.app === "صنعتی" ? "bg-[#f9eae8] text-[#a7473f]" : "bg-[#e8f1f8] text-[#326b99]"}`}>{r.app}</span></td><td>{r.use}</td><td className="font-bold text-[#316e5c]">{r.source}</td><td className="text-[#7f898f]">{r.notes}</td></tr>)}</tbody></table></div><div className="flex flex-col gap-2 border-t border-[#e7eaec] bg-[#fafbfb] px-5 py-3 text-[9px] text-[#899299] sm:flex-row sm:items-center"><span className="flex items-center gap-2"><ShieldCheck size={14} className="text-[#2f7863]"/> مشخصات قبل از سفارش باید با کاتالوگ رسمی و فروشنده تطبیق داده شوند.</span><span className="sm:mr-auto flex items-center gap-3 font-bold"><a className="text-[#bd3564]" href={instagramUrl} target="_blank" rel="noopener noreferrer" dir="ltr">Instagram: @yasinrou</a><a className="text-[#1f8fc0]" href={telegramUrl} target="_blank" rel="noopener noreferrer" dir="ltr">Telegram: @Pars_sell_bot</a></span></div></section>
   </div>;
 }
 function CatalogSummary({icon:Icon,title,subtitle,stats,color,items}:{icon:typeof Home;title:string;subtitle:string;stats:string;color:string;items:string}) { const blue=color==="blue"; return <div className="rounded-2xl border border-[#e1e5e7] bg-white p-5"><div className="flex"><span className={`grid size-10 place-items-center rounded-xl ${blue?"bg-[#e9f1f7] text-[#376d98]":"bg-[#f8eae8] text-[#ad4b43]"}`}><Icon size={19}/></span><div className="mr-3"><h3 className="text-sm font-black">{title}</h3><p className="mt-1 text-[9px] text-[#899299]">{subtitle}</p></div><span className="mr-auto self-start rounded-md bg-[#f2f4f4] px-2 py-1 text-[9px] font-bold">{stats}</span></div><p className="mt-4 border-t border-[#edf0f1] pt-3 text-[10px] leading-5 text-[#68747c]">{items}</p></div>; }
