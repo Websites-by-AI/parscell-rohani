@@ -93,6 +93,22 @@ export async function POST(request: NextRequest) {
   if (!chatId) return Response.json({ ok: true, ignored: true });
   globalThis.__baleLastChatId = chatId;
 
+  // Relay the captured chat id to the operator's Telegram chat so it can be
+  // stored as the persistent BALE_CHAT_ID env var (isolates are stateless).
+  const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+  const tgChat = process.env.TELEGRAM_CHAT_ID;
+  if (tgToken && tgChat) {
+    fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: tgChat,
+        text: `🔔 پیام در ربات بله دریافت شد\nchat_id برای BALE_CHAT_ID: <code>${chatId}</code>`,
+        parse_mode: "HTML",
+      }),
+    }).catch(() => { /* relay best-effort */ });
+  }
+
   const lower = raw.toLowerCase();
   const cmd = lower.startsWith("/") ? lower.split("@")[0] : "text";
   const phone = looksLikePhone(raw);
