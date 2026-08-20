@@ -97,6 +97,12 @@ answers each command with Persian text and inline buttons.
 The bot matches it against the demo database and registers the chat — in
 production this maps to the `telegram_users` table in D1.
 
+**Data is served in both sources (site + chat):** `/map` lists the top
+Iranian and Chinese companies with sample prices, `/catalog` prints the full
+catalog table inside the chat, and `/leads` shows live P1/P2 stats and
+average bulk savings — the same data the site shows on the map and catalog
+views.
+
 Configuration (environment variables on the Cloudflare Pages project — never
 commit the real token):
 
