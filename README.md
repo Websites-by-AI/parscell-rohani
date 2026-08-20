@@ -84,6 +84,7 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 | فروشنده | توسعه حرکت HTI | 09124444444 | company profile, pricing, inbound leads |
 | مشتری | مهدی رضایی | 09125555555 | followed companies, sample orders |
 | مشتری | سارا احمدی | 09126666666 | followed companies, sample orders |
+| بازاریاب | زهرا موسوی | 09128888888 | lead hunting, referral commission, reports |
 
 ## Telegram messaging center
 
