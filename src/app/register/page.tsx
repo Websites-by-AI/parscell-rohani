@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, CheckCircle2, KeyRound, Phone, Radar, Send, ShoppingCart, Store, User, UserPlus, X } from "lucide-react";
+import { Building2, CheckCircle2, KeyRound, Megaphone, Phone, Radar, Send, ShoppingCart, Store, User, UserPlus, X } from "lucide-react";
 import { roleLabels, type Role } from "@/data/accounts";
 import { registerUser } from "@/lib/session";
 
 const ROLE_OPTIONS: { id: Role; icon: typeof Store; desc: string }[] = [
   { id: "buyer", icon: ShoppingCart, desc: "خریدار تجهیزات و قطعات" },
   { id: "seller", icon: Store, desc: "فروشنده یا سازنده BLDC" },
+  { id: "marketer", icon: Megaphone, desc: "بازاریاب معرف — کمیسیون" },
   { id: "customer", icon: Building2, desc: "مشتری پروژه (HVAC، پمپ، تهویه)" },
 ];
 
@@ -54,7 +55,7 @@ export default function RegisterPage() {
           <p className="mt-1.5 text-[10px] leading-5 text-[#7c858d]">پس از ثبت‌نام، داشبورد نقش‌محور شما فعال می‌شود. نسخه دمو — اطلاعات فقط در همین مرورگر ذخیره می‌شود.</p>
 
           <div className="mt-5 space-y-3">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
               {ROLE_OPTIONS.map((r) => (
                 <button key={r.id} onClick={() => setRole(r.id)} className={`rounded-xl border p-2.5 text-center transition ${role === r.id ? "border-[#79aa9d] bg-[#eaf4f0]" : "border-[#e0e4e7] bg-white hover:border-[#b9d3cb]"}`}>
                   <r.icon size={15} className={`mx-auto ${role === r.id ? "text-[#21725d]" : "text-[#8b949b]"}`}/>

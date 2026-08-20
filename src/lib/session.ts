@@ -123,7 +123,7 @@ export function registerUser(input: RegisterInput): { session: Session } | { err
   if (name.length < 3) return { error: "نام و نام خانوادگی را کامل وارد کنید." };
   if (!/^09\d{9}$/.test(phone)) return { error: "شماره موبایل معتبر نیست (مثال: 09121111111)." };
   if ((input.password ?? "").length < 6) return { error: "رمز عبور باید حداقل ۶ کاراکتر باشد." };
-  if (!["admin", "buyer", "seller", "customer"].includes(role)) return { error: "نقش نامعتبر است." };
+  if (!["admin", "buyer", "seller", "customer", "marketer"].includes(role)) return { error: "نقش نامعتبر است." };
   if (findAccountByPhone(phone)) return { error: "این شماره موبایل قبلاً ثبت شده است — وارد شوید." };
 
   const account: DemoAccount = {

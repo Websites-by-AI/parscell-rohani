@@ -6,7 +6,7 @@
  * tables are defined in db/d1-schema.sql (Cloudflare D1).
  */
 
-export type Role = "admin" | "buyer" | "seller" | "customer";
+export type Role = "admin" | "buyer" | "seller" | "customer" | "marketer";
 
 export interface DemoAccount {
   id: string;
@@ -24,6 +24,7 @@ export const roleLabels: Record<Role, string> = {
   buyer: "خریدار (کاربر)",
   seller: "فروشنده",
   customer: "مشتری",
+  marketer: "بازاریاب",
 };
 
 export const demoAccounts: DemoAccount[] = [
@@ -33,6 +34,7 @@ export const demoAccounts: DemoAccount[] = [
   { id: "slr-02", name: "توسعه حرکت HTI", role: "seller", phone: "09124444444", password: "demo123", company: "HTI", city: "تهران", note: "سازنده موتور صنعتی" },
   { id: "cst-01", name: "مهدی رضایی", role: "customer", phone: "09125555555", password: "demo123", company: "تهویه آسایش اصفهان", city: "اصفهان", note: "مشتری پروژه‌های HVAC" },
   { id: "cst-02", name: "سارا احمدی", role: "customer", phone: "09126666666", password: "demo123", company: "ساختمان سبز شیراز", city: "شیراز", note: "مشتری پمپ و فن کم‌مصرف" },
+  { id: "mkt-01", name: "زهرا موسوی", role: "marketer", phone: "09128888888", password: "demo123", company: "بازاریابی دیجیتال موسوی", city: "تهران", note: "بازاریاب معرف — کمیسیون معرفی" },
 ];
 
 /** Demo users of the Clinic Signal project — shown in the Telegram bot too. */

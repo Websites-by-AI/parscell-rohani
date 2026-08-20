@@ -38,6 +38,12 @@ const MODULES: Record<Role, { icon: typeof Users; title: string; desc: string }[
     { icon: Send, title: "ارتباط با فروشنده", desc: "پیام تأییدشده به فروشنده" },
     { icon: Wallet, title: "پیش‌فاکتور", desc: "برآورد هزینه پروژه بر اساس نمونه قیمت" },
   ],
+  marketer: [
+    { icon: Target, title: "یافتن لید جدید", desc: "کشف شرکت‌های مناسب برای معرفی" },
+    { icon: Wallet, title: "کمیسیون و معرفی", desc: "ثبت معرفی و پیگیری کمیسیون هر مشتری" },
+    { icon: Send, title: "ارسال در تلگرام", desc: "معرفی با تأیید انسانی از طریق ربات" },
+    { icon: BarChart3, title: "گزارش عملکرد", desc: "کلیک‌ها، ثبت‌نام‌ها و معرفی‌های موفق" },
+  ],
 };
 
 const ROLE_COLORS: Record<Role, string> = {
@@ -45,6 +51,7 @@ const ROLE_COLORS: Record<Role, string> = {
   buyer: "bg-[#e8f1f8] text-[#346c9d]",
   seller: "bg-[#e9f4ef] text-[#21725d]",
   customer: "bg-[#f8eedb] text-[#a0792c]",
+  marketer: "bg-[#fbe6ee] text-[#b0346a]",
 };
 
 const INBOUND_LEADS = [

@@ -1,5 +1,8 @@
 import type { NextRequest } from "next/server";
 import { demoAccounts, clinicDemoUsers, findByPhone, roleLabels } from "@/data/accounts";
+import { sellers, catalogRows, type Seller } from "@/app/data";
+import { globalSellers } from "@/app/data-global";
+import { priceInfo } from "@/app/pricing";
 
 export const runtime = "edge";
 
@@ -162,7 +165,13 @@ export async function POST(request: NextRequest) {
           "",
           "من اعلان‌های مرکز عملیات موتورهای BLDC را ارسال می‌کنم و کاربران با شماره موبایل ثبت‌نام می‌شوند.",
           "",
-          "📱 برای ثبت‌نام: /register",
+          "📊 داده‌ها همین‌جا داخل چت هم در دسترس‌اند:",
+          "/map — شرکت‌های برتر + قیمت نمونه",
+          "/catalog — جدول مدل‌های کاتالوگ",
+          "/leads — آمار لیدها و صرفه‌جویی",
+          "",
+          "📱 ثبت‌نام: /register",
+          "📣 عضویت بازاریاب با کمیسیون معرفی — /register و نقش بازاریاب",
           "👥 کاربران دمو: /users",
           "🏥 کاربران دموی کلینیک: /clinic",
         ].join("\n");
@@ -181,16 +190,64 @@ export async function POST(request: NextRequest) {
           "/contact — راه‌های ارتباط",
         ].join("\n");
         break;
-      case "/map":
-        text = "🗺 <b>نقشه فروشندگان BLDC</b>\n۲۳ فروشنده و سازنده ایرانی + ۱۰۰ شرکت بین‌المللی (چین و سایر کشورها) با نمونه قیمت و تحلیل هزینه روی نقشه تعاملی:";
+      case "/map": {
+        const iranTop = [...sellers].sort((a, b) => b.score - a.score).slice(0, 3);
+        const chinaTop = globalSellers
+          .filter((s) => (s.country ?? "").includes("چین"))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
+        const line = (s: Seller) => {
+          const p = priceInfo(s);
+          return `• <b>${s.name}</b> — امتیاز ${s.score} — ${s.power} — <code>${p.perWatt}</code> (تا ${p.savingPct}٪ صرفه)`;
+        };
+        text = [
+          "🗺 <b>نقشه فروشندگان BLDC</b>",
+          `📊 مجموع: ${sellers.length} شرکت ایرانی + ${globalSellers.length} شرکت بین‌المللی`,
+          "",
+          "🇮🇷 برترین‌های ایران:",
+          ...iranTop.map(line),
+          "",
+          "🇨🇳 برترین‌های چین:",
+          ...chinaTop.map(line),
+          "",
+          "برای مشاهده کامل نقشه تعاملی و تحلیل هزینه:",
+        ].join("\n");
         break;
+      }
       case "/catalog":
-        text = "📄 <b>کاتالوگ محصولات</b>\nنسخه HTML آماده چاپ کاتالوگ تجمیع‌شده (خانگی و صنعتی) را باز کنید:";
+        text = [
+          "📄 <b>کاتالوگ محصولات BLDC</b> — نسخه داخل چت",
+          "",
+          ...catalogRows.map((r) => `• <b>${r.model}</b> — ${r.power} · ${r.voltage} · ${r.rpm} RPM · گشتاور ${r.torque}\n   کاربرد: ${r.app} · ${r.use} · منبع: ${r.source}`),
+          "",
+          "مشخصات قبل از سفارش باید با فروشنده تأیید شود. نسخه کامل چاپی:",
+        ].join("\n");
         replyMarkup = keyboard([[{ label: "دانلود کاتالوگ HTML", url: `${SITE_URL}/api/catalog/html` }, { label: "CSV", url: `${SITE_URL}/api/catalog` }]]);
         break;
-      case "/leads":
-        text = "📊 <b>بانک لیدها</b>\nاعلان هر لید جدید از همین ربات ارسال می‌شود. برای مشاهده کامل داشبورد از دکمه زیر استفاده کنید:";
+      case "/leads": {
+        const all = [...sellers, ...globalSellers];
+        const p1 = all.filter((s) => s.score >= 85).length;
+        const p2 = all.filter((s) => s.score >= 70 && s.score < 85).length;
+        const catalogs = all.filter((s) => s.catalog).length;
+        const iranAvg = Math.round(sellers.reduce((acc, s) => acc + priceInfo(s).savingPct, 0) / sellers.length);
+        const chinaAvg = Math.round(
+          globalSellers.filter((s) => (s.country ?? "").includes("چین")).reduce((acc, s) => acc + priceInfo(s).savingPct, 0) /
+          Math.max(1, globalSellers.filter((s) => (s.country ?? "").includes("چین")).length)
+        );
+        text = [
+          "📊 <b>بانک لیدها — آمار زنده سامانه</b>",
+          "",
+          `👥 کل شرکت‌ها: ${all.length} (ایران ${sellers.length} + جهانی ${globalSellers.length})`,
+          `🔴 اولویت P1 (امتیاز +85): ${p1}`,
+          `🟡 اولویت P2 (امتیاز 70–84): ${p2}`,
+          `📄 دارای کاتالوگ: ${catalogs}`,
+          "",
+          `💰 میانگین صرفه‌جویی عمده — ایران: ${iranAvg}٪ · چین: ${chinaAvg}٪`,
+          "",
+          "اعلان هر لید جدید از همین ربات ارسال می‌شود. برای جزئیات کامل:",
+        ].join("\n");
         break;
+      }
       case "/rag":
         text = "🤖 <b>RAG آنالیز کاتالوگ</b>\nآنالیز سمانتیک کاتالوگ‌های PDF (نیان موتور و HTI) در بخش RAG داشبورد:";
         break;

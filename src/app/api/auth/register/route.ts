@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   if (name.length < 3) return Response.json({ ok: false, error: "نام و نام خانوادگی را کامل وارد کنید." }, { status: 400 });
   if (!/^09\d{9}$/.test(phone)) return Response.json({ ok: false, error: "شماره موبایل معتبر نیست (مثال: 09121111111)." }, { status: 400 });
   if (password.length < 6) return Response.json({ ok: false, error: "رمز عبور باید حداقل ۶ کاراکتر باشد." }, { status: 400 });
-  if (!["admin", "buyer", "seller", "customer"].includes(role)) return Response.json({ ok: false, error: "نقش نامعتبر است." }, { status: 400 });
+  if (!["admin", "buyer", "seller", "customer", "marketer"].includes(role)) return Response.json({ ok: false, error: "نقش نامعتبر است." }, { status: 400 });
 
   const existing = demoAccounts.find((a) => a.phone === phone) || registry().has(phone);
   if (existing) return Response.json({ ok: false, error: "این شماره موبایل قبلاً ثبت شده است." }, { status: 409 });
