@@ -2,8 +2,8 @@
 
 import {
   BadgeCheck, BarChart3, Bot, CheckCircle2, FileText, Globe2, KeyRound, Lock,
-  Map, Megaphone, Radar, Send, ShieldCheck, Sparkles, Target, User, UserPlus,
-  Users, Wallet, Zap,
+  Map, Megaphone, MessageCircle, Radar, Send, ShieldCheck, Sparkles, Target,
+  User, UserPlus, Users, Wallet, Zap,
 } from "lucide-react";
 
 /**
@@ -68,10 +68,11 @@ export default function ModuleHub() {
               <a href="/login" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-black text-[#153e35] shadow-[0_10px_26px_rgba(0,0,0,.25)] transition hover:-translate-y-0.5"><KeyRound size={15}/> ورود به حساب</a>
               <a href="/register" className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-xs font-black text-white transition hover:bg-white/20"><UserPlus size={15}/> ثبت‌نام رایگان</a>
               <a href="https://t.me/Pars_sell_bot" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-xs font-black text-white transition hover:bg-white/20"><Send size={15}/> ربات تلگرام</a>
+              <a href="https://ble.ir/power_sell_bot" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-[#0d8a5b] px-5 py-3 text-xs font-black text-white shadow-[0_10px_26px_rgba(13,138,91,.35)] transition hover:-translate-y-0.5"><MessageCircle size={15}/> ربات بله</a>
             </div>
           </div>
           <div className="grid shrink-0 grid-cols-2 gap-2 md:w-[220px] md:grid-cols-1">
-            {[["۱۲۳", "شرکت روی نقشه"], ["۵", "نقش کاربری"], ["۲", "منبع داده"], ["۱۰۰٪", "تأیید انسانی"]].map(([v, l]) => (
+            {[["۱۲۳", "شرکت روی نقشه"], ["۵", "نقش کاربری"], ["۳", "مسیر داده"], ["۱۰۰٪", "تأیید انسانی"]].map(([v, l]) => (
               <div key={l} className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-center">
                 <div className="text-xl font-black text-[#8dd0b9]">{v}</div>
                 <div className="mt-0.5 text-[9px] text-white/60">{l}</div>
@@ -164,12 +165,12 @@ export default function ModuleHub() {
           </div>
         </section>
 
-        {/* ── Dual-source data (site + Telegram) ─────────── */}
+        {/* ── Multi-source data (site + Telegram + Bale) ──── */}
         <section className="py-10">
-          <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold text-[#23816a]"><span className="h-px w-6 bg-[#23816a]"/> داده در دو منبع</div>
-          <h2 className="text-xl font-black text-[#14211e]">همان داده‌ها — سایت و تلگرام</h2>
-          <p className="mt-1.5 max-w-2xl text-[10px] leading-5 text-[#78828b]">شرکت‌ها، قیمت نمونه و کاتالوگ در سایت نمایش داده می‌شوند و همان محتوا مستقیماً داخل چت ربات تلگرام هم در دسترس است.</p>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold text-[#23816a]"><span className="h-px w-6 bg-[#23816a]"/> داده در سه مسیر</div>
+          <h2 className="text-xl font-black text-[#14211e]">همان داده‌ها — سایت، تلگرام و بله</h2>
+          <p className="mt-1.5 max-w-2xl text-[10px] leading-5 text-[#78828b]">شرکت‌ها، قیمت نمونه و کاتالوگ در سایت نمایش داده می‌شوند و همان محتوا مستقیماً داخل چت هر دو ربات — تلگرام و بله — هم در دسترس است.</p>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-[#e1e5e7] bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="grid size-10 place-items-center rounded-xl bg-[#e9f2ee] text-[#256452]"><Globe2 size={19}/></span>
@@ -181,12 +182,23 @@ export default function ModuleHub() {
             <div className="rounded-2xl border border-[#cfe3f1] bg-[#f2f9fd] p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="grid size-10 place-items-center rounded-xl bg-[#dceef7] text-[#1e7ea8]"><Bot size={19}/></span>
-                <span className="rounded-md bg-[#dceef7] px-2 py-1 text-[9px] font-black text-[#17688f]">منبع ۲ · ربات تلگرام</span>
+                <span className="rounded-md bg-[#dceef7] px-2 py-1 text-[9px] font-black text-[#17688f]">منبع ۲ · تلگرام</span>
               </div>
               <h3 className="mt-4 text-sm font-black">@Pars_sell_bot — داده داخل چت</h3>
               <p className="mt-2 text-[10px] leading-5 text-[#7c858d]">لیست شرکت‌های برتر با قیمت نمونه، جدول کاتالوگ، آمار لیدها و ثبت‌نام کاربران — همه بدون خروج از تلگرام.</p>
               <div className="mt-3 flex flex-wrap gap-1.5" dir="ltr">
-                {["/map", "/catalog", "/leads", "/register", "/users", "/clinic"].map((c) => <code key={c} className="rounded-md bg-white px-2 py-1 text-[9px] font-bold text-[#1e7ea8]">{c}</code>)}
+                {["/map", "/catalog", "/leads", "/register"].map((c) => <code key={c} className="rounded-md bg-white px-2 py-1 text-[9px] font-bold text-[#1e7ea8]">{c}</code>)}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-[#c8ecd7] bg-[#eefaf3] p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="grid size-10 place-items-center rounded-xl bg-[#d9f2e5] text-[#0d8a5b]"><MessageCircle size={19}/></span>
+                <span className="rounded-md bg-[#d9f2e5] px-2 py-1 text-[9px] font-black text-[#0d7a50]">منبع ۳ · بله</span>
+              </div>
+              <h3 className="mt-4 text-sm font-black">@power_sell_bot — نسخه بله</h3>
+              <p className="mt-2 text-[10px] leading-5 text-[#5f6b67]">همان دستورها و همان داده‌ها روی پیام‌رسان ایرانی بله — شرکت‌های برتر، کاتالوگ داخل چت، آمار لیدها و ثبت‌نام با شماره موبایل.</p>
+              <div className="mt-3 flex flex-wrap gap-1.5" dir="ltr">
+                {["/map", "/leads", "/users", "/clinic"].map((c) => <code key={c} className="rounded-md bg-white px-2 py-1 text-[9px] font-bold text-[#0d8a5b]">{c}</code>)}
               </div>
             </div>
           </div>
@@ -223,6 +235,7 @@ export default function ModuleHub() {
             <a href="/login" className="hover:text-[#256452]">ورود</a>
             <a href="/register" className="hover:text-[#256452]">ثبت‌نام</a>
             <a href="https://t.me/Pars_sell_bot" target="_blank" rel="noopener noreferrer" className="hover:text-[#1e7ea8]">تلگرام</a>
+            <a href="https://ble.ir/power_sell_bot" target="_blank" rel="noopener noreferrer" className="hover:text-[#0d8a5b]">بله</a>
             <a href="https://www.instagram.com/yasinrou/" target="_blank" rel="noopener noreferrer" className="hover:text-[#bd3564]">اینستاگرام</a>
           </div>
           <p className="max-w-xs text-center text-[9px] leading-4 text-[#9aa2a8] md:text-left">اطلاعات عمومی است و پیش از هر سفارش باید با فروشنده تأیید شود. بدون ادعای تضمین.</p>

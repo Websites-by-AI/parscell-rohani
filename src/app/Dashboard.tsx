@@ -5,7 +5,7 @@ import {
   Activity, ArrowLeft, AtSign, BarChart3, Bell, BookOpen, Bot, Building2, Check,
   CheckCircle2, ChevronDown, ChevronLeft, CircleHelp, ClipboardCheck, Code2, Download,
   ExternalLink, Factory, FileDown, FileText, Filter, Gauge, Globe2, Home, Layers3,
-  LayoutDashboard, ListFilter, Map, MapPin, Menu, MessageSquareText, MoreHorizontal,
+  LayoutDashboard, ListFilter, Map, MapPin, Menu, MessageCircle, MessageSquareText, MoreHorizontal,
   PackageCheck, PanelRightClose, Plus, Radar, Search, Send, Settings, ShieldCheck,
   SlidersHorizontal, Sparkles, Target, Upload, User, Users, Wallet, X, Zap,
 } from "lucide-react";
@@ -196,6 +196,7 @@ export default function Dashboard() {
           <div className="mr-auto flex items-center gap-2.5">
             <div className="hidden items-center gap-2 rounded-full border border-[#dfe5e3] px-3 py-1.5 text-[10px] font-bold text-[#326252] md:flex"><span className="size-1.5 animate-pulse rounded-full bg-[#35a977]"/> API زنده متصل</div>
             <a href="https://t.me/Pars_sell_bot" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full border border-[#cfe3f1] bg-[#f2f9fd] px-3 py-1.5 text-[10px] font-black text-[#1e7ea8] transition hover:bg-[#e5f3fa]"><Send size={13}/> تلگرام</a>
+            <a href="https://ble.ir/power_sell_bot" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full border border-[#c8ecd7] bg-[#eefaf3] px-3 py-1.5 text-[10px] font-black text-[#0d8a5b] transition hover:bg-[#e0f5ea]"><MessageCircle size={13}/> بله</a>
             <button className="relative grid size-9 place-items-center rounded-full border border-[#e2e6e9] bg-white text-[#56616b]"><Bell size={17}/><span className="absolute left-1.5 top-1.5 size-1.5 rounded-full bg-[#e65b4f] ring-2 ring-white"/></button>
             <button onClick={() => goTo("account")} className="flex items-center gap-2 rounded-full border border-[#e2e6e9] py-1 pl-2 pr-1" title={session.account.name}><span className="grid size-7 place-items-center rounded-full bg-[#dceae4] text-[10px] font-black text-[#1c5749]">{initials}</span><ChevronDown className="hidden sm:block" size={13}/></button>
           </div>
