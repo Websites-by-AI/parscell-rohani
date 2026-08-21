@@ -3,6 +3,7 @@ import { demoAccounts, clinicDemoUsers, findByPhone, roleLabels } from "@/data/a
 import { sellers, catalogRows, type Seller } from "@/app/data";
 import { globalSellers } from "@/app/data-global";
 import { priceInfo } from "@/app/pricing";
+import { migrationAgents } from "@/data/immigration";
 
 export const runtime = "edge";
 
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
           "📣 عضویت بازاریاب با کمیسیون معرفی — /register و نقش بازاریاب",
           "👥 کاربران دمو: /users",
           "🏥 کاربران دموی کلینیک: /clinic",
+          "🌍 ایجنت‌های مهاجرت (از گیت‌هاب): /migration",
         ].join("\n");
         break;
       case "/help":
@@ -187,6 +189,7 @@ export async function POST(request: NextRequest) {
           "/register — ثبت‌نام با شماره موبایل",
           "/users — کاربران دموی سامانه",
           "/clinic — کاربران دموی کلینیک",
+          "/migration — ایجنت‌های مهاجرت (از گیت‌هاب)",
           "/contact — راه‌های ارتباط",
         ].join("\n");
         break;
@@ -272,6 +275,21 @@ export async function POST(request: NextRequest) {
           "",
           "برای ثبت‌نام با شماره هر کلینیک، شماره را ارسال کنید.",
         ].join("\n");
+        break;
+      case "/migration":
+        text = [
+          "🌍 <b>ایجنت‌های مهاجرت</b> — از مخازن گیت‌هاب (شاهرخ، دستیار ویزا، Soh Visa)",
+          "",
+          ...migrationAgents.map((a) =>
+            `• ${a.kind === "ai" ? "🤖" : a.kind === "company" ? "🏢" : "👤"} <b>${a.name}</b> — ${a.country}${a.credentials ? ` (${a.credentials})` : ""}\n  ${a.note}${a.phone ? `\n  📞 <code>${a.phone}</code>` : ""}`
+          ),
+          "",
+          "⚠️ اطلاعات عمومی از ریپوهای دمو است — قبل از اقدام با ایجنت/وکیل تأیید کنید.",
+        ].join("\n");
+        replyMarkup = keyboard([
+          [{ label: "شاهان (Shaahan)", url: "https://apply.shaahan.com/" }],
+          [{ label: "ربات شاهرخ", url: "https://t.me/shahrokh_imigration_bot" }],
+        ]);
         break;
       case "/contact":
         text = "📞 <b>ارتباط</b>\nInstagram: @yasinrou\nTelegram: @Pars_sell_bot\nسایت: parscell.exhibition2world.ir";
