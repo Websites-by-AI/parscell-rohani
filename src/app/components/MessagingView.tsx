@@ -196,7 +196,7 @@ export default function MessagingView() {
               ))}
             </div>
             <div className="mt-3 rounded-lg border border-[#dce8e3] bg-white p-3 text-[9px] leading-5 text-[#74807c]" dir="ltr">
-              /start · /help · /map · /catalog · /leads · /register · /users · /clinic
+              /start · /help · /map · /catalog · /leads · /register · /users · /clinic · /migration
             </div>
           </section>
 

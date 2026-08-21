@@ -3,7 +3,7 @@ import { demoAccounts, clinicDemoUsers, findByPhone, roleLabels } from "@/data/a
 import { sellers, catalogRows, type Seller } from "@/app/data";
 import { globalSellers } from "@/app/data-global";
 import { priceInfo } from "@/app/pricing";
-import { migrationAgents } from "@/data/immigration";
+import { migrationAgents, type MigrationAgent } from "@/data/immigration";
 
 export const runtime = "edge";
 
@@ -266,13 +266,23 @@ export async function POST(request: NextRequest) {
           "برای ثبت‌نام با شماره هر کلینیک، شماره را ارسال کنید.",
         ].join("\n");
         break;
-      case "/migration":
+      case "/migration": {
+        const humans = migrationAgents.filter((a) => a.kind === "human");
+        const companies = migrationAgents.filter((a) => a.kind === "company");
+        const ais = migrationAgents.filter((a) => a.kind === "ai");
+        const line = (a: MigrationAgent) =>
+          `• <b>${a.name}</b> — ${a.country}${a.credentials ? ` (${a.credentials})` : ""}\n  ${a.note}${a.phone ? `\n  📞 <code>${a.phone}</code>` : ""}`;
         text = [
-          "🌍 <b>ایجنت‌های مهاجرت</b> — از مخازن گیت‌هاب (شاهرخ، دستیار ویزا، Soh Visa)",
+          `🌍 <b>ایجنت‌های مهاجرت</b> — ${migrationAgents.length} مورد از مخازن گیت‌هاب (شاهرخ، دستیار ویزا، Soh Visa)`,
           "",
-          ...migrationAgents.map((a) =>
-            `• ${a.kind === "ai" ? "🤖" : a.kind === "company" ? "🏢" : "👤"} <b>${a.name}</b> — ${a.country}${a.credentials ? ` (${a.credentials})` : ""}\n  ${a.note}${a.phone ? `\n  📞 <code>${a.phone}</code>` : ""}`
-          ),
+          "🏢 <b>شرکت‌ها:</b>",
+          ...companies.map(line),
+          "",
+          "👤 <b>مشاوران رسمی:</b>",
+          ...humans.map(line),
+          "",
+          "🤖 <b>ایجنت‌های هوش مصنوعی:</b>",
+          ...ais.map(line),
           "",
           "⚠️ اطلاعات عمومی از ریپوهای دمو است — قبل از اقدام با ایجنت/وکیل تأیید کنید.",
         ].join("\n");
@@ -281,6 +291,7 @@ export async function POST(request: NextRequest) {
           [{ label: "ربات شاهرخ", url: "https://t.me/shahrokh_imigration_bot" }],
         ]);
         break;
+      }
       case "/contact":
         text = `📞 <b>ارتباط</b>\nTelegram: @Pars_sell_bot\nBale: @power_sell_bot\nInstagram: @yasinrou\nسایت: ${SITE_URL.replace("https://", "")}`;
         break;
