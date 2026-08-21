@@ -23,7 +23,7 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 ## Features
 
 - **🗺 Seller map** — interactive Leaflet map (OpenStreetMap / Google tiles / Carto dark & light / custom vector Iran map) with **۲۳ Iranian + ۱۰۰ international** (China-focused, with Chinese names 中文) sellers, an Iran/World scope toggle, country filter, live filtering (search, household/industrial, voltage class, production type, catalog only), P1–P3 lead-priority scoring, a sorted results table, and a "add to lead bank" workflow.
-- **📨 مرکز پیام‌رسانی (Messaging center)** — multi-channel panel inspired by the Clinic Signal workflow: Telegram is live (other channels marked "به‌زودی"), topic selector, message composer with **human-approval checkbox and Dry Run mode**, bot status, and a compliance checklist (no-contact list, opt-out, server-side keys).
+- **📨 مرکز پیام‌رسانی (Messaging center)** — multi-channel panel inspired by the Clinic Signal workflow: **Telegram (@Pars_sell_bot) and Bale/@power_sell_bot are live** (WhatsApp/Email/SMS marked "به‌زودی"), channel selector, topic selector, message composer with **human-approval checkbox and Dry Run mode**, bot status panels, and a compliance checklist (no-contact list, opt-out, server-side keys).
 - **🤖 RAG آنالیز کاتالوگ** — semantic catalog analysis view: knowledge-source
   index (PDF catalogs, datasheets, site audits), featured specs, vector-chunk
   status and a query panel (demo data).
@@ -40,7 +40,10 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
   | `GET /api/catalog/html` | Standalone, printable HTML version of the catalog |
   | `GET /api/health` | Health check (no database required) |
   | `GET/POST /api/telegram` | Telegram messaging center: status + send notifications (supports `dryRun`) |
-  | `GET/POST /api/telegram/webhook` | Telegram bot webhook — answers `/start /help /map /catalog /leads /rag /contact` |
+  | `GET/POST /api/telegram/webhook` | Telegram bot webhook — answers `/start /help /map /catalog /leads /rag /contact /register /users /clinic` |
+  | `GET/POST /api/bale` | Bale (بل) messaging center: status + send notifications (supports `dryRun`) |
+  | `GET/POST /api/bale/webhook` | Bale bot webhook — same command set as Telegram, on `tapi.bale.ai` |
+  | `POST /api/bale/setup` | One-time Bale webhook bootstrap / chat-id capture, run from the Cloudflare edge |
 
 - **📨 Telegram integration** — the dashboard notifies the operator's Telegram
   chat through the [@Pars_sell_bot](https://t.me/Pars_sell_bot) bot:
@@ -86,12 +89,17 @@ Deployed on **Cloudflare Pages**, connected to this GitHub repository
 | مشتری | سارا احمدی | 09126666666 | followed companies, sample orders |
 | بازاریاب | زهرا موسوی | 09128888888 | lead hunting, referral commission, reports |
 
-## Telegram messaging center
+## Telegram & Bale messaging centers
 
-Notifications are delivered by the bot **[@Pars_sell_bot](https://t.me/Pars_sell_bot)**
-with a full command menu (`/start /help /map /catalog /leads /rag /contact
-/register /users /clinic`) and a webhook at `/api/telegram/webhook` that
-answers each command with Persian text and inline buttons.
+Notifications are delivered by two bots, both with a full command menu
+(`/start /help /map /catalog /leads /rag /contact /register /users /clinic`)
+and webhooks at `/api/telegram/webhook` and `/api/bale/webhook` that answer
+each command with Persian text and inline buttons:
+
+| Channel | Bot | Link | API |
+|---|---|---|---|
+| تلگرام | @Pars_sell_bot | t.me/Pars_sell_bot | api.telegram.org |
+| بله (Bale) | @power_sell_bot | ble.ir/power_sell_bot | tapi.bale.ai (Telegram-compatible) |
 
 **User registration by phone:** send `/register`, then send your phone number
 (any demo number from the table above, or a clinic demo number from `/clinic`).
@@ -105,13 +113,15 @@ average bulk savings — the same data the site shows on the map and catalog
 views.
 
 Configuration (environment variables on the Cloudflare Pages project — never
-commit the real token):
+commit the real tokens):
 
 | Variable | Purpose |
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) |
 | `TELEGRAM_CHAT_ID` | Chat that receives notifications (see below) |
-| `TELEGRAM_WEBHOOK_SECRET` | Random string used as `secret_token` in `setWebhook` |
+| `TELEGRAM_WEBHOOK_SECRET` | Random string used as `secret_token` in `setWebhook` (shared by both channels) |
+| `BALE_BOT_TOKEN` | Bale bot token (from Bale BotFather) |
+| `BALE_CHAT_ID` | Operator chat id for Bale — captured automatically on first `/start` and relayed to your Telegram; set it manually for stability |
 
 One-time setup commands (after the env vars are deployed):
 
@@ -123,7 +133,19 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/setMyCommands" -H 'Content-Typ
 # Register the webhook (secret must match TELEGRAM_WEBHOOK_SECRET)
 curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" -H 'Content-Type: application/json' \
   -d '{"url":"https://parscell.exhibition2world.ir/api/telegram/webhook","secret_token":"<SECRET>"}'
+
+# Bale webhook — run from the Cloudflare edge (tapi.bale.ai may be blocked from dev machines):
+curl -X POST "https://parscell-rohani.pages.dev/api/bale/setup" \
+  -H "x-admin-secret: <SECRET>" -H 'Content-Type: application/json' -d '{"action":"register"}'
+
+# Capture the Bale operator chat id (pause webhook -> getUpdates -> re-register):
+curl -X POST "https://parscell-rohani.pages.dev/api/bale/setup" \
+  -H "x-admin-secret: <SECRET>" -H 'Content-Type: application/json' -d '{"action":"capture_chat"}'
 ```
+
+**Bale chat id**: when anyone messages @power_sell_bot, the webhook relays the
+captured chat id to your Telegram chat (`BALE_CHAT_ID`). Set that number as
+the `BALE_CHAT_ID` env var on Pages and redeploy for persistent delivery.
 
 To obtain `TELEGRAM_CHAT_ID`:
 
