@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
           "📣 عضویت بازاریاب با کمیسیون معرفی — /register و نقش بازاریاب",
           "👥 کاربران دمو: /users",
           "🏥 کاربران دموی کلینیک: /clinic",
-          "🌍 ایجنت‌های مهاجرت (از گیت‌هاب): /migration",
+          "🌍 ایجنت‌های مهاجرت (از گیت‌هاب): /migration و /migration2",
         ].join("\n");
         break;
       case "/help":
@@ -189,7 +189,8 @@ export async function POST(request: NextRequest) {
           "/register — ثبت‌نام با شماره موبایل",
           "/users — کاربران دموی سامانه",
           "/clinic — کاربران دموی کلینیک",
-          "/migration — ایجنت‌های مهاجرت (از گیت‌هاب)",
+          "/migration — ایجنت‌های مهاجرت، بخش ۱ (از گیت‌هاب)",
+          "/migration2 — ایجنت‌های مهاجرت، بخش ۲",
           "/contact — راه‌های ارتباط",
         ].join("\n");
         break;
@@ -277,13 +278,13 @@ export async function POST(request: NextRequest) {
         ].join("\n");
         break;
       case "/migration": {
-        const humans = migrationAgents.filter((a) => a.kind === "human");
         const companies = migrationAgents.filter((a) => a.kind === "company");
+        const humans = migrationAgents.filter((a) => a.kind === "human");
         const ais = migrationAgents.filter((a) => a.kind === "ai");
         const line = (a: MigrationAgent) =>
           `• <b>${a.name}</b> — ${a.country}${a.credentials ? ` (${a.credentials})` : ""}\n  ${a.note}${a.phone ? `\n  📞 <code>${a.phone}</code>` : ""}`;
         text = [
-          `🌍 <b>ایجنت‌های مهاجرت</b> — ${migrationAgents.length} مورد از مخازن گیت‌هاب (شاهرخ، دستیار ویزا، Soh Visa)`,
+          "🌍 <b>ایجنت‌های مهاجرت — بخش ۱</b> (از مخازن گیت‌هاب)",
           "",
           "🏢 <b>شرکت‌ها:</b>",
           ...companies.map(line),
@@ -291,14 +292,33 @@ export async function POST(request: NextRequest) {
           "👤 <b>مشاوران رسمی:</b>",
           ...humans.map(line),
           "",
-          "🤖 <b>ایجنت‌های هوش مصنوعی:</b>",
-          ...ais.map(line),
+          "🤖 <b>ایجنت‌های هوش مصنوعی (۱–۵):</b>",
+          ...ais.slice(0, 5).map(line),
           "",
+          `ادامه ایجنت‌ها (۶–${ais.length}): /migration2`,
           "⚠️ اطلاعات عمومی از ریپوهای دمو است — قبل از اقدام با ایجنت/وکیل تأیید کنید.",
         ].join("\n");
         replyMarkup = keyboard([
           [{ label: "شاهان (Shaahan)", url: "https://apply.shaahan.com/" }],
           [{ label: "ربات شاهرخ", url: "https://t.me/shahrokh_imigration_bot" }],
+        ]);
+        break;
+      }
+      case "/migration2": {
+        const ais = migrationAgents.filter((a) => a.kind === "ai");
+        const line = (a: MigrationAgent) =>
+          `• <b>${a.name}</b> — ${a.country}\n  ${a.note}`;
+        text = [
+          "🌍 <b>ایجنت‌های مهاجرت — بخش ۲</b> (هوش مصنوعی)",
+          "",
+          ...ais.slice(5).map((a, i) => `${i + 6}. ${line(a).slice(2)}`),
+          "",
+          `مجموع: ${migrationAgents.length} ایجنت از ریپوهای شاهرخ، دستیار ویزا و Soh Visa.`,
+          "بخش ۱: /migration",
+        ].join("\n");
+        replyMarkup = keyboard([
+          [{ label: "ربات شاهرخ", url: "https://t.me/shahrokh_imigration_bot" }],
+          [{ label: "شاهان (Shaahan)", url: "https://apply.shaahan.com/" }],
         ]);
         break;
       }
