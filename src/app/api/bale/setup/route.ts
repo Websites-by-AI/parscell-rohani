@@ -65,6 +65,33 @@ export async function POST(request: NextRequest) {
     return Response.json({ ok: true, chatId, chatName, webhookUrl });
   }
 
+  if (action === "commands") {
+    const res = await fetch(`https://tapi.bale.ai/bot${token}/setMyCommands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        commands: [
+          { command: "start", description: "شروع و راهنمای سریع" },
+          { command: "help", description: "راهنمای کامل ربات" },
+          { command: "map", description: "نقشه فروشندگان ایران و جهانی" },
+          { command: "catalog", description: "کاتالوگ محصولات BLDC" },
+          { command: "leads", description: "بانک لیدها و آمار" },
+          { command: "register", description: "ثبت‌نام با شماره موبایل" },
+          { command: "users", description: "کاربران دموی سامانه" },
+          { command: "clinic", description: "کاربران دموی کلینیک" },
+          { command: "migration", description: "ایجنت‌های مهاجرت — بخش ۱" },
+          { command: "migration2", description: "ایجنت‌های مهاجرت — بخش ۲" },
+          { command: "contact", description: "راه‌های ارتباط" },
+        ],
+      }),
+    });
+    const cmdData = (await res.json().catch(() => null)) as { ok?: boolean; description?: string } | null;
+    if (!res.ok || !cmdData?.ok) {
+      return Response.json({ ok: false, error: cmdData?.description ?? "Bale API error" }, { status: 502 });
+    }
+    return Response.json({ ok: true, message: "Bale command menu set (11 commands)" });
+  }
+
   const response = await fetch(`https://tapi.bale.ai/bot${token}/setWebhook`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

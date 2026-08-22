@@ -204,7 +204,30 @@ export default function ModuleHub() {
           </div>
         </section>
 
-        {/* ── Demo strip + FAQ ───────────────────────────── */}
+        {/* ── Bot network (all three bots) ────────────────── */}
+        <section className="mt-8 rounded-3xl border border-[#dce5e1] bg-white p-6 shadow-sm md:p-8">
+          <div className="mb-2 flex items-center gap-2 text-[11px] font-extrabold text-[#23816a]"><span className="h-px w-6 bg-[#23816a]"/> شبکه ربات‌ها</div>
+          <h2 className="text-xl font-black text-[#14211e]">سه ربات، سه کانال ارتباطی</h2>
+          <p className="mt-1.5 max-w-2xl text-[10px] leading-5 text-[#78828b]">هر ربات منوی کامل فارسی و داده داخل چت دارد — داده‌های BLDC و ایجنت‌های مهاجرت در همه کانال‌ها یکسان است.</p>
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
+            <a href="https://t.me/Pars_sell_bot" target="_blank" rel="noopener noreferrer" className="rounded-2xl border border-[#cfe3f1] bg-[#f2f9fd] p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center justify-between"><Send size={19} className="text-[#1e7ea8]"/><span className="rounded-full bg-[#dceef7] px-2 py-0.5 text-[9px] font-black text-[#17688f]">تلگرام</span></div>
+              <div className="mt-3 text-sm font-black text-[#26333d]">@Pars_sell_bot</div>
+              <p className="mt-1.5 text-[9px] leading-4 text-[#6b767e]">مرکز عملیات BLDC — نقشه، کاتالوگ، لیدها و ثبت‌نام کاربران</p>
+            </a>
+            <a href="https://ble.ir/power_sell_bot" target="_blank" rel="noopener noreferrer" className="rounded-2xl border border-[#c8ecd7] bg-[#eefaf3] p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center justify-between"><MessageCircle size={19} className="text-[#0d8a5b]"/><span className="rounded-full bg-[#d9f2e5] px-2 py-0.5 text-[9px] font-black text-[#0d7a50]">بله</span></div>
+              <div className="mt-3 text-sm font-black text-[#26333d]">@power_sell_bot</div>
+              <p className="mt-1.5 text-[9px] leading-4 text-[#5f6b67]">نسخه بله سامانه BLDC — همان دستورها و داده‌ها روی پیام‌رسان ایرانی</p>
+            </a>
+            <a href="https://t.me/shahrokh_imigration_bot" target="_blank" rel="noopener noreferrer" className="rounded-2xl border border-[#eee5d2] bg-[#fbf7ee] p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center justify-between"><Bot size={19} className="text-[#9a7521]"/><span className="rounded-full bg-[#f3ead5] px-2 py-0.5 text-[9px] font-black text-[#8a6a1f]">مهاجرت</span></div>
+              <div className="mt-3 text-sm font-black text-[#26333d]">@shahrokh_imigration_bot</div>
+              <p className="mt-1.5 text-[9px] leading-4 text-[#6b767e]">گروه مهاجرتی شاهرخ — مسیرهای ترکیه و ۲۰ ایجنت مهاجرت</p>
+            </a>
+          </div>
+        </section>
+
         <section className="grid gap-4 pb-4 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="rounded-2xl border border-[#dce5e1] bg-[#f7faf8] p-5">
             <div className="flex items-center"><span className="ml-2 grid size-8 place-items-center rounded-lg bg-[#e8f2fb] text-[#1f7ba6]"><Users size={16}/></span><h3 className="text-sm font-black">حساب‌های دمو — رمز همه: <span dir="ltr" className="text-[#1f7ba6]">demo123</span></h3></div>
