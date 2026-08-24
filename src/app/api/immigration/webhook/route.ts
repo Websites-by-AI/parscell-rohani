@@ -1,15 +1,12 @@
 import type { NextRequest } from "next/server";
-import { migrationAgents, type MigrationAgent } from "@/data/immigration";
+import { migrationAgents } from "@/data/immigration";
+import { agentLine, b, c, li } from "@/lib/botFormat";
 
 export const runtime = "edge";
 
 /**
  * Webhook for @shahrokh_imigration_bot (گروه مهاجرتی شاهرخ).
- * Serves the migration-agent knowledge compiled from the immigration repos
- * (SBZ-EDU/shahrokh-immigration-turkey, Websites-by-AI/AI-Iimmigration-visa-
- * assistant-, Websites-by-AI/Soh_visa_by_xprize).
- *
- * Validated with the shared TELEGRAM_WEBHOOK_SECRET (secret_token).
+ * Clean, short replies. Validated with the shared TELEGRAM_WEBHOOK_SECRET.
  */
 
 const BOT_URL = "https://t.me/shahrokh_imigration_bot";
@@ -17,7 +14,7 @@ const BOT_URL = "https://t.me/shahrokh_imigration_bot";
 type Update = { message?: { chat?: { id: number }; text?: string } };
 
 function keyboard(rows: { label: string; url: string }[][]) {
-  return { inline_keyboard: rows.map((row) => row.map((b) => ({ text: b.label, url: b.url }))) };
+  return { inline_keyboard: rows.map((row) => row.map((k) => ({ text: k.label, url: k.url }))) };
 }
 
 function menuKeyboard() {
@@ -28,26 +25,23 @@ function menuKeyboard() {
 }
 
 const TURKEY_ROUTES = [
-  "⚡ <b>اکسپرس ملکی ۴۰۰K$</b> — شهروندی مستقیم + پاسپورت ترکیه، ۳–۶ ماه",
-  "🏠 <b>اقامت ملکی ۲۰۰K$</b> — کیملیک ۱ ساله (بدون اجازه کار)، تمدیدشدنی",
-  "🎓 <b>تحصیلی</b> — پذیرش دانشگاه + کار ۲۰ ساعت/هفته پس از ۱ ترم",
-  "💼 <b>کاری / ثبت شرکت</b> — Çalışma İzni، اقامت دائم پس از ۵ سال",
+  li("اکسپرس ملکی ۴۰۰K$", "شهروندی + پاسپورت · ۳–۶ ماه"),
+  li("اقامت ملکی ۲۰۰K$", "کیملیک ۱ ساله · تمدیدشدنی"),
+  li("تحصیلی", "پذیرش دانشگاه · کار ۲۰ ساعت/هفته"),
+  li("کاری / ثبت شرکت", "Çalışma İzni · دائم پس از ۵ سال"),
 ];
 
 const TURKEY_COSTS = [
-  "ثبت تاپو: ۴٪ ارزش ملک (معمولاً ۵۰/۵۰)",
-  "تمبر تاپو: ۰.۹۴۸٪",
-  "بسته Lite شاهرخ: ارزیابی + توریستی ۹۰ روزه + مشاوره اجاره — ۳۵۰$",
+  li("ثبت تاپو", "۴٪ ارزش ملک"),
+  li("تمبر تاپو", "۰.۹۴۸٪"),
+  li("بسته Lite شاهرخ", "ارزیابی + توریستی ۹۰ روزه + مشاوره اجاره · ۳۵۰$"),
 ];
-
-const agentLine = (a: MigrationAgent) =>
-  `• <b>${a.name}</b> — ${a.country}${a.credentials ? ` (${a.credentials})` : ""}\n  ${a.note}${a.phone ? `\n  📞 <code>${a.phone}</code>` : ""}`;
 
 export async function GET() {
   return Response.json({
     ok: true,
     bot: "@shahrokh_imigration_bot",
-    commands: ["/start", "/help", "/agents", "/agents2", "/turkey", "/consultants", "/contact"],
+    commands: ["start", "help", "turkey", "agents", "agents2", "consultants", "contact"],
     agents: migrationAgents.length,
   });
 }
@@ -56,15 +50,11 @@ export async function POST(request: NextRequest) {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (secret) {
     const header = request.headers.get("x-telegram-bot-api-secret-token");
-    if (header !== secret) {
-      return new Response("unauthorized", { status: 401 });
-    }
+    if (header !== secret) return new Response("unauthorized", { status: 401 });
   }
 
   const token = process.env.IMMIGRATION_BOT_TOKEN;
-  if (!token) {
-    return Response.json({ ok: false, error: "IMMIGRATION_BOT_TOKEN is not configured." }, { status: 503 });
-  }
+  if (!token) return Response.json({ ok: false, error: "IMMIGRATION_BOT_TOKEN is not configured." }, { status: 503 });
 
   let update: Update;
   try {
@@ -84,39 +74,34 @@ export async function POST(request: NextRequest) {
   switch (cmd) {
     case "/start":
       text = [
-        "سلام! به ربات <b>گروه مهاجرتی شاهرخ</b> خوش آمدید 🌍",
+        "سلام! به ربات گروه مهاجرتی شاهرخ خوش آمدید 🌍",
         "",
-        "مسیرهای مهاجرت به ترکیه و ایجنت‌های تخصصی سامانه:",
-        "/turkey — مسیرهای ۴گانه ترکیه + هزینه‌ها",
-        "/agents — ایجنت‌ها، بخش ۱ (شرکت‌ها و مشاوران)",
-        "/agents2 — ایجنت‌های هوشمند، بخش ۲",
+        b("مسیرهای ترکیه"),
+        "/turkey — ۴ مسیر + هزینه‌ها",
+        "",
+        b("ایجنت‌ها"),
+        "/agents · /agents2 — ۲۰ ایجنت مهاجرت",
         "/consultants — مشاوران رسمی",
-        "/contact — تماس و لینک‌ها",
         "",
-        "⚠️ مشاوره عمومی است و جایگزین وکیل رسمی نیست.",
+        "⚠️ مشاوره عمومی است، جایگزین وکیل نیست.",
       ].join("\n");
       break;
     case "/help":
       text = [
-        "<b>راهنمای ربات</b>",
-        "",
+        b("راهنما"),
         "/turkey — مسیرها و هزینه‌های ترکیه",
-        "/agents — ایجنت‌های مهاجرت، بخش ۱",
-        "/agents2 — ایجنت‌های مهاجرت، بخش ۲",
+        "/agents · /agents2 — ایجنت‌های مهاجرت",
         "/consultants — مشاوران رسمی",
-        "/contact — راه‌های ارتباط",
+        "/contact — ارتباط",
       ].join("\n");
       break;
     case "/turkey":
       text = [
-        "🇹🇷 <b>مسیرهای ۴گانه ترکیه</b> — ۴ سرعت برای ۴ بودجه",
-        "",
+        `🇹🇷 ${b("مسیرهای ۴گانه ترکیه")}`,
         ...TURKEY_ROUTES,
         "",
-        "💶 <b>هزینه‌های واقعی ۲۰۲۶:</b>",
+        `💶 ${b("هزینه‌های ۲۰۲۶")}`,
         ...TURKEY_COSTS,
-        "",
-        "📌 نکته: حداقل اقامت ملکی کلان‌شهرها ۲۰۰K$ و شهروندی ۴۰۰K$ است.",
       ].join("\n");
       replyMarkup = keyboard([[{ label: "درخواست از شاهان", url: "https://apply.shaahan.com/" }]]);
       break;
@@ -125,55 +110,45 @@ export async function POST(request: NextRequest) {
       const humans = migrationAgents.filter((a) => a.kind === "human");
       const ais = migrationAgents.filter((a) => a.kind === "ai");
       text = [
-        "🌍 <b>ایجنت‌های مهاجرت — بخش ۱</b>",
+        `🌍 ${b("ایجنت‌های مهاجرت — ۱")}`,
+        ...companies.map((a) => agentLine(a)),
         "",
-        "🏢 <b>شرکت‌ها:</b>",
-        ...companies.map(agentLine),
+        ...humans.map((a) => agentLine(a)),
         "",
-        "👤 <b>مشاوران رسمی:</b>",
-        ...humans.map(agentLine),
+        ...ais.slice(0, 5).map((a, i) => agentLine(a, i + 1)),
         "",
-        "🤖 <b>ایجنت‌های هوشمند (۱–۵):</b>",
-        ...ais.slice(0, 5).map(agentLine),
-        "",
-        `ادامه: /agents2 (مجموع ${migrationAgents.length} ایجنت)`,
+        `ادامه: /agents2`,
       ].join("\n");
       break;
     }
     case "/agents2": {
       const ais = migrationAgents.filter((a) => a.kind === "ai");
       text = [
-        "🌍 <b>ایجنت‌های مهاجرت — بخش ۲</b> (هوش مصنوعی)",
+        `🌍 ${b("ایجنت‌های مهاجرت — ۲")}`,
+        ...ais.slice(5).map((a, i) => agentLine(a, i + 6)),
         "",
-        ...ais.slice(5).map((a, i) => `${i + 6}. <b>${a.name}</b> — ${a.country}\n  ${a.note}`),
-        "",
-        "بخش ۱: /agents",
+        `مجموع: ${migrationAgents.length} ایجنت`,
       ].join("\n");
-      replyMarkup = keyboard([[{ label: "ربات تلگرام BLDC", url: "https://t.me/Pars_sell_bot" }]]);
+      replyMarkup = keyboard([[{ label: "ربات BLDC", url: "https://t.me/Pars_sell_bot" }]]);
       break;
     }
     case "/consultants":
       text = [
-        "👤 <b>مشاوران رسمی مهاجرت</b>",
-        "",
-        ...migrationAgents.filter((a) => a.kind === "human").map(agentLine),
-        "",
-        "اعتبارنامه‌ها: RCIC/OISC (کانادا/بریتانیا)، AILA (آمریکا)، IMC (سرمایه‌گذاری)",
+        `👤 ${b("مشاوران رسمی")}`,
+        ...migrationAgents.filter((a) => a.kind === "human").map((a) => agentLine(a)),
       ].join("\n");
       break;
     case "/contact":
       text = [
-        "📞 <b>ارتباط</b>",
-        "",
-        "🏢 شاهان: apply.shaahan.com",
-        "📱 شاهرخ ترکیه: +90 542 177 2753 / +90 531 779 4462",
-        "🇮🇷 ایران: +98 921 774 ...",
-        `🤖 این ربات: ${BOT_URL}`,
-        "🗺 داشبورد BLDC: parscell.exhibition2world.ir",
+        "📞 ارتباط",
+        `🏢 شاهان: apply.shaahan.com`,
+        `📱 ترکیه: ${c("+90 542 177 2753")}`,
+        `🇮🇷 ایران: ${c("+98 921 774 ...")}`,
+        `🤖 ربات: ${BOT_URL.replace("https://", "")}`,
       ].join("\n");
       break;
     default:
-      text = "یک دستور از منو انتخاب کنید (/help) یا از دکمه‌های زیر استفاده کنید:";
+      text = "یک دستور از منو انتخاب کنید (/help).";
   }
 
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -183,8 +158,6 @@ export async function POST(request: NextRequest) {
   });
 
   const data = (await response.json().catch(() => null)) as { ok?: boolean } | null;
-  if (!response.ok || !data?.ok) {
-    return Response.json({ ok: false }, { status: 502 });
-  }
+  if (!response.ok || !data?.ok) return Response.json({ ok: false }, { status: 502 });
   return Response.json({ ok: true, replied: cmd });
 }
